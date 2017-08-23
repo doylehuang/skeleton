@@ -541,6 +541,7 @@ def bmchealth_check_alignment_traps():
                 g_number_of_system = number_of_system
     except:
             print "[bmchealth_check_alignment_traps]exception !!!"
+    return True
 
 def watch_redfish():
     watchdog_file_path = "/var/lib/obmc/watch_redfish"
