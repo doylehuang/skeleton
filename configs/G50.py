@@ -1507,7 +1507,7 @@ BMC_LOGEVENT_CONFIG = {
 		'Event Type': 0x72,
 		'Event Data Table': {
 			'System Event PowerOn': {
-				'Severity': 'Ok',
+				'Severity': 'OK',
 				'Event Data Information': {
 					'System Event PowerOn':	[0x00, None, None],
 				},
