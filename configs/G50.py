@@ -379,17 +379,17 @@ def _add_gpu_temperature_sensor(configs, index, sensornumber):
         configs[objpath] = []
         configs[objpath].append(config)
 
-def _add_virtual_gpu_mem_temperature_sensor(configs, index, sensornumber):
+def _add_gpu_mem_temperature_sensor(configs, index, sensornumber):
     objpath = '/org/openbmc/sensors/gpu/gpu_mem_temp'
     config = {
-        'critical_upper': 81,
+        'critical_upper': 85,
         'positive_hysteresis': 2,
         'device_node': '/tmp/gpu/gpu%d_mem_temp' % index,
         'object_path': 'sensors/gpu/gpu_mem_temp',
         'poll_interval': 5000,
         'reading_type': 0x01,
         'scale': 1,
-        'sensor_name': 'GPU%d Memory Temp' % index,
+        'sensor_name': 'GPU%d Mem Temp' % index,
         'sensor_type': '0x01',
         'sensornumber': sensornumber,
         'standby_monitor': False,
@@ -1063,16 +1063,14 @@ _add_thermal_gpio(SENSOR_MONITOR_CONFIG, 8, 251)
 _add_sys_throttle_gpio(SENSOR_MONITOR_CONFIG, 0x8B, 388, 389)
 _add_session_audit(SENSOR_MONITOR_CONFIG, 0x8C)
 _add_system_event(SENSOR_MONITOR_CONFIG, 0x8D)
-
-
-_add_virtual_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 1, 0xa1)
-_add_virtual_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 2, 0xa2)
-_add_virtual_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 3, 0xa3)
-_add_virtual_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 4, 0xa4)
-_add_virtual_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 5, 0xa5)
-_add_virtual_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 6, 0xa6)
-_add_virtual_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 7, 0xa7)
-_add_virtual_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 8, 0xa8)
+_add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 1, 0x62)
+_add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 2, 0x63)
+_add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 3, 0x64)
+_add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 4, 0x65)
+_add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 5, 0x66)
+_add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 6, 0x67)
+_add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 7, 0x68)
+_add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 8, 0x69)
 
 
 
@@ -1289,7 +1287,7 @@ FAN_ALGORITHM_CONFIG = {
         [
             "/org/openbmc/sensors/gpu/gpu_mem_temp",
             "SensorNumberList", #notfity following setting about SensorNumberList
-            "0xa1", #base sensor number
+            "0x62", #base sensor number
             "8", #releate sensor list size
         ],
     'CLOSE_LOOP_PARAM_4' :
