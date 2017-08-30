@@ -870,32 +870,6 @@ def _add_gpu_slot(configs, index, gpio):
         }]
     configs.append(config)
 
-def _add_powergood_gpio(configs, index, gpio):
-    config = ['/org/openbmc/control/powergood/slot%d' % index, {
-        'device_node': '/sys/class/gpio/gpio%d/value' % gpio,
-        'object_path': 'control/powergood/slot%d' % index,
-        'poll_interval': 10000,
-        'scale': 1,
-        'standby_monitor': True,
-        'units': '',
-        'index': index,
-        'inverse': 1,
-        }]
-    configs.append(config)
-
-def _add_thermal_gpio(configs, index, gpio):
-    config = ['/org/openbmc/control/thermal/slot%d' % index, {
-        'device_node': '/sys/class/gpio/gpio%d/value' % gpio,
-        'object_path': 'control/thermal/slot%d' % index,
-        'poll_interval': 10000,
-        'scale': 1,
-        'standby_monitor': True,
-        'units': '',
-        'index': index,
-        'inverse': 1,
-        }]
-    configs.append(config)
-
 def _add_sys_throttle_gpio(configs, sensornumber, gpio, extra_gpio):
     config = ['/org/openbmc/sensors/system_throttle', {
         'device_node': '/sys/class/gpio/gpio%d/value' % gpio,
@@ -1044,22 +1018,6 @@ _add_gpu_slot(SENSOR_MONITOR_CONFIG, 5, 240)
 _add_gpu_slot(SENSOR_MONITOR_CONFIG, 6, 241)
 _add_gpu_slot(SENSOR_MONITOR_CONFIG, 7, 242)
 _add_gpu_slot(SENSOR_MONITOR_CONFIG, 8, 243)
-_add_powergood_gpio(SENSOR_MONITOR_CONFIG, 1, 228)
-_add_powergood_gpio(SENSOR_MONITOR_CONFIG, 2, 229)
-_add_powergood_gpio(SENSOR_MONITOR_CONFIG, 3, 230)
-_add_powergood_gpio(SENSOR_MONITOR_CONFIG, 4, 231)
-_add_powergood_gpio(SENSOR_MONITOR_CONFIG, 5, 232)
-_add_powergood_gpio(SENSOR_MONITOR_CONFIG, 6, 233)
-_add_powergood_gpio(SENSOR_MONITOR_CONFIG, 7, 234)
-_add_powergood_gpio(SENSOR_MONITOR_CONFIG, 8, 235)
-_add_thermal_gpio(SENSOR_MONITOR_CONFIG, 1, 244)
-_add_thermal_gpio(SENSOR_MONITOR_CONFIG, 2, 245)
-_add_thermal_gpio(SENSOR_MONITOR_CONFIG, 3, 246)
-_add_thermal_gpio(SENSOR_MONITOR_CONFIG, 4, 247)
-_add_thermal_gpio(SENSOR_MONITOR_CONFIG, 5, 248)
-_add_thermal_gpio(SENSOR_MONITOR_CONFIG, 6, 249)
-_add_thermal_gpio(SENSOR_MONITOR_CONFIG, 7, 250)
-_add_thermal_gpio(SENSOR_MONITOR_CONFIG, 8, 251)
 _add_sys_throttle_gpio(SENSOR_MONITOR_CONFIG, 0x8B, 388, 389)
 _add_session_audit(SENSOR_MONITOR_CONFIG, 0x8C)
 _add_system_event(SENSOR_MONITOR_CONFIG, 0x8D)
@@ -1075,54 +1033,6 @@ _add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 8, 0x69)
 
 
 HWMON_CONFIG = {
-    '21-0037' :  {
-        'names' : {
-            'temp1_input' : {
-                'object_path' : 'sensors/temperature/TMP1',
-                'poll_interval' : 5000,
-                'scale' : 1000,
-                'units' : 'C',
-                'sensor_type' : '0x01',
-                'sensornumber' : '',
-                'sensor_name':'',
-                'reading_type' : 0x01,
-                'emergency_enabled' : True,
-                'standby_monitor': False,
-                },
-        }
-    },
-    '21-0049' :  {
-        'names' : {
-            'temp1_input' : {
-                'object_path' : 'sensors/temperature/TMP2',
-                'poll_interval' : 5000,
-                'scale' : 1000,
-                'units' : 'C',
-                'sensor_type' : '0x01',
-                'sensornumber' : '',
-                'sensor_name':'',
-                'reading_type' : 0x01,
-                'emergency_enabled' : True,
-                'standby_monitor': False,
-                },
-        }
-    },
-    '21-004a' :  {
-        'names' : {
-            'temp1_input' : {
-                'object_path' : 'sensors/temperature/TMP3',
-                'poll_interval' : 5000,
-                'scale' : 1000,
-                'units' : 'C',
-                'sensor_type' : '0x01',
-                'sensornumber' : '',
-                'sensor_name':'',
-                'reading_type' : 0x01,
-                'emergency_enabled' : True,
-                'standby_monitor': False,
-                },
-        }
-    },
     '21-004b' :  {
         'names' : {
             'temp1_input' : {
