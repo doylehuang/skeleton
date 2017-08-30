@@ -544,7 +544,7 @@ def bmchealth_check_alignment_traps():
     return True
 
 def watch_redfish():
-    watchdog_file_path = "/var/lib/obmc/watch_redfish"
+    watchdog_file_path = "/run/obmc/watch_redfish"
     redfishAlive = False
 
     ssl._create_default_https_context = ssl._create_unverified_context
@@ -575,7 +575,7 @@ def watch_redfish():
     return True
 
 def watch_event_service():
-    watchdog_file_path = "/var/lib/obmc/watch_event_service"
+    watchdog_file_path = "/run/obmc/watch_event_service"
     try:
         bmclogevent_ctl.bmclogevent_get_log_rollover()
     except:

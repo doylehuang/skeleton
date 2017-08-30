@@ -26,7 +26,7 @@ SENSOR_PATH = '/org/openbmc/sensors'
 DIR_POLL_INTERVAL = 30000
 HWMON_PATH = '/sys/class/hwmon'
 KICK_WATCHDOG_INTERVAL = 10000
-WATCHDOG_FILE_PATH = "/var/lib/obmc/watch_hwmon"
+WATCHDOG_FILE_PATH = "/run/obmc/watch_hwmon"
 
 ## static define which interface each property is under
 ## need a better way that is not slow
