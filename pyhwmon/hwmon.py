@@ -2,7 +2,7 @@
 
 import sys
 import os
-import gobject
+import glib
 import glob
 import dbus
 import dbus.service
@@ -18,14 +18,15 @@ import obmc.sensor_data_record_pool as sdr_tool
 import obmc_system_config as System
 import bmclogevent_ctl
 import traceback
+from time import sleep
 
 SENSOR_BUS = 'org.openbmc.Sensors'
 # sensors include /org/openbmc/sensors and /org/openbmc/control
 SENSORS_OBJPATH = '/org/openbmc'
 SENSOR_PATH = '/org/openbmc/sensors'
-DIR_POLL_INTERVAL = 30000
+DIR_POLL_INTERVAL = 30
 HWMON_PATH = '/sys/class/hwmon'
-KICK_WATCHDOG_INTERVAL = 10000
+KICK_WATCHDOG_INTERVAL = 10
 WATCHDOG_FILE_PATH = "/run/obmc/watch_hwmon"
 
 ## static define which interface each property is under
@@ -106,8 +107,8 @@ class Hwmons():
 		self.pmbus5_hwmon = ""
 		self.pmbus6_hwmon = ""
 		self.record_pgood = 0
-		gobject.timeout_add(DIR_POLL_INTERVAL, self.scanDirectory)
-		gobject.timeout_add(KICK_WATCHDOG_INTERVAL, self.kickWatchdog)
+		glib.timeout_add_seconds(DIR_POLL_INTERVAL, self.scanDirectory)
+		glib.timeout_add_seconds(KICK_WATCHDOG_INTERVAL, self.kickWatchdog)
 
 	def readAttribute(self,filename):
 		val = "-1"
@@ -301,6 +302,7 @@ class Hwmons():
 
 		except Exception as e:
 			print str(e)
+		sleep(0.4)
 		return True
 
 	def sesson_audit_check(self, objpath, attribute, hwmon):
@@ -356,6 +358,7 @@ class Hwmons():
 
 		except Exception as e:
 			print str(e)
+		sleep(0.4)
 		return True
 
 	def check_pmbus_state(self, objpath, hwmons):
@@ -434,6 +437,7 @@ class Hwmons():
 
 			except Exception as e:
 				print str(e)
+		sleep(0.4)
 		return True
 
 	def check_system_event(self, current_pgood):
@@ -570,6 +574,7 @@ class Hwmons():
 			except:
 				traceback.print_exc()
 				print "HWMON: Attibute no longer exists: "+hwmon['object_path']
+		sleep(0.4)
 		return True
 
 	def poll(self,objpath,attribute,hwmon):
@@ -656,6 +661,7 @@ class Hwmons():
 			print "HWMON: Attibute no longer exists: "+attribute
 			self.sensors.pop(objpath,None)
 			return False
+		sleep(0.4)
 		return True
 
 	def LogThresholdEventMessages(self, hwmon, severity, event_dir, evd1, evd2=0xFF, evd3=0xFF):
@@ -702,7 +708,7 @@ class Hwmons():
 			self.hwmon_root[dpath].append(objpath)
 			self.threshold_state[objpath] = "NORMAL"
 
-			gobject.timeout_add(hwmon['poll_interval'],self.poll,objpath,hwmon_path,hwmon)
+			glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.poll,objpath,hwmon_path,hwmon)
 
 	def addSensorMonitorObject(self):
 		if "SENSOR_MONITOR_CONFIG" not in dir(System):
@@ -753,17 +759,17 @@ class Hwmons():
 				self.threshold_state[objpath] = "NORMAL"
 				if 'sensornumber' in hwmon and hwmon['sensornumber'] >= 0x83 and hwmon['sensornumber'] <= 0x88:
 					self.psu_state[objpath] = 0x0
-					gobject.timeout_add(hwmon['poll_interval'],self.check_pmbus_state,objpath, hwmon_path, hwmon)
+					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.check_pmbus_state,objpath, hwmon_path, hwmon)
 				elif 'sensornumber' in hwmon and hwmon['sensornumber'] == 0x81:
 					self.check_ntp_init_status(hwmon)
 				elif 'sensornumber' in hwmon and hwmon['sensornumber'] == 0x8B:
 					self.throttle_state[objpath] = 0
-					gobject.timeout_add(hwmon['poll_interval'],self.check_throttle_state,objpath, hwmon_path, hwmon)
+					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.check_throttle_state,objpath, hwmon_path, hwmon)
 				elif 'sensornumber' in hwmon and hwmon['sensornumber'] == 0x8C:
-					gobject.timeout_add(hwmon['poll_interval'],self.sesson_audit_check,objpath, hwmon_path, hwmon)
+					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.sesson_audit_check,objpath, hwmon_path, hwmon)
 				else:
 					if hwmon.has_key('poll_interval'):
-						gobject.timeout_add(hwmon['poll_interval'],self.poll,objpath,hwmon_path,hwmon)
+						glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.poll,objpath,hwmon_path,hwmon)
 
 	def addSensorMonitor(self):
 		if "HWMON_SENSOR_CONFIG" not in dir(System):
@@ -823,12 +829,12 @@ class Hwmons():
 						self.psu_state[hwmon['sensornumber']] = 0x0
 
 				if last_sensor_number >= 0x83 and last_sensor_number <= 0x88:
-					gobject.timeout_add(hwmon['poll_interval'],self.check_pmbus_state,objpath, hwmons)
+					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.check_pmbus_state,objpath, hwmons)
 				elif last_sensor_number == 0x81:
 					self.check_ntp_init_status(hwmon)
 				else:
 					if hwmon.has_key('poll_interval'):
-						gobject.timeout_add(hwmon['poll_interval'],self.sensor_polling,objpath, hwmons)
+						glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.sensor_polling,objpath, hwmons)
 				self.sensors[objpath]=True
 
 	def check_ntp_init_status(self, hwmon):
@@ -954,10 +960,11 @@ class Hwmons():
 
 if __name__ == '__main__':
 
+	os.nice(-19)
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 	bus = get_dbus()
 	root_sensor = Hwmons(bus)
-	mainloop = gobject.MainLoop()
+	mainloop = glib.MainLoop()
 
 	print "Starting HWMON sensors"
 	mainloop.run()
