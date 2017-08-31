@@ -481,7 +481,7 @@ class Hwmons():
 				if 'firmware_update' in hwmon:
 					firmware_update_status = intf.Get(HwmonSensor.IFACE_NAME,'firmware_update')
 					if (firmware_update_status & (1 << (hwmon['index'] - 1))) > 0:
-						return True
+						continue
 
 				# skip get sensor readings while dc on/off in progress
 				dc_on_off = self.pgood_intf.Get('org.openbmc.control.Power', 'dc_on_off')
@@ -536,7 +536,7 @@ class Hwmons():
 					dc_on_off = self.pgood_intf.Get('org.openbmc.control.Power', 'dc_on_off')
 					if dc_on_off == 1:
 						hwmon['threshold_state'] = 'NORMAL'
-						return True
+						continue
 
 					if hwmon['threshold_state'].find("CRITICAL") != -1 or origin_threshold_state.find("CRITICAL") != -1:
 						severity = Event.SEVERITY_CRIT
