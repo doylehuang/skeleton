@@ -310,7 +310,7 @@ class Hwmons():
 			sensor_number = hwmon['sensornumber']
 			severity = Event.SEVERITY_CRIT
 
-			patch = '/var/log/auth.log'
+			patch = '/var/log/secure'
 			file = open(patch, 'r')
 
 			for line in file:
@@ -348,6 +348,30 @@ class Hwmons():
 					evd1 = 0x2
 					evd2 = 0x1
 					evd3 = 0x2
+					log = Event.from_binary(severity, sensor_type, sensor_number, \
+								event_dir | event_type, evd1, evd2, evd3)
+					self.event_manager.create(log)
+
+				idFilter = 'Close session'
+				idPosition = fileString.find(idFilter)
+				if idPosition != -1:
+					event_dir = 1
+					event_type = 0x6f
+					evd1 = 0x1
+					evd2 = 0x1
+					evd3 = 0x10
+					log = Event.from_binary(severity, sensor_type, sensor_number, \
+								event_dir | event_type, evd1, evd2, evd3)
+					self.event_manager.create(log)
+
+				idFilter = 'Timeout'
+				idPosition = fileString.find(idFilter)
+				if idPosition != -1:
+					event_dir = 1
+					event_type = 0x6f
+					evd1 = 0x1
+					evd2 = 0x1
+					evd3 = 0x18
 					log = Event.from_binary(severity, sensor_type, sensor_number, \
 								event_dir | event_type, evd1, evd2, evd3)
 					self.event_manager.create(log)
