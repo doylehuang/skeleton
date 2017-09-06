@@ -108,7 +108,6 @@ class Hwmons():
 		self.pmbus6_hwmon = ""
 		self.record_pgood = 0
 		glib.timeout_add_seconds(DIR_POLL_INTERVAL, self.scanDirectory)
-		glib.timeout_add_seconds(KICK_WATCHDOG_INTERVAL, self.kickWatchdog)
 
 	def readAttribute(self,filename):
 		val = "-1"
@@ -462,6 +461,7 @@ class Hwmons():
 			pass
 
 	def sensor_polling(self, objpath, hwmons):
+		self.kickWatchdog()
 		obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
 		intf = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
 		threshold_props = intf.GetAll(SensorThresholds.IFACE_NAME)
@@ -578,6 +578,7 @@ class Hwmons():
 		return True
 
 	def poll(self,objpath,attribute,hwmon):
+		self.kickWatchdog()
 		try:
 			standby_monitor = True
 			if hwmon.has_key('standby_monitor'):

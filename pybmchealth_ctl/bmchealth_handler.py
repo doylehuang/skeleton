@@ -22,6 +22,7 @@ DBUS_NAME = 'org.openbmc.Sensors'
 DBUS_INTERFACE = 'org.freedesktop.DBus.Properties'
 SENSOR_VALUE_INTERFACE = 'org.openbmc.SensorValue'
 
+watch_redfish_start_file = "/run/obmc/redfish_start" # 0: redfish prepare to start; 1: gevent prepare to create port443
 g_bmchealth_obj_path = "/org/openbmc/sensors/bmc_health"
 g_i2c_recovery = {}
 g_reboot_flag = 0
@@ -544,34 +545,19 @@ def bmchealth_check_alignment_traps():
     return True
 
 def watch_redfish():
+    flag_redfish_start = 0
     watchdog_file_path = "/run/obmc/watch_redfish"
-    redfishAlive = False
-
-    ssl._create_default_https_context = ssl._create_unverified_context
-    req = urllib2.Request("https://127.0.0.1/redfish/v1")
-    base64string = base64.b64encode('%s:%s' % ('username', 'password'))
-    req.add_header("Authorization", "Basic %s" % base64string)
-    try:
-        resp = urllib2.urlopen(req, timeout=9)
-        #print '@@@ status = ' + resp.getcode()
-    except urllib2.HTTPError as e:
-        if e.code == 401:
-            redfishAlive = True
-    except urllib2.URLError as e:
-        return True
-    except httplib.BadStatusLine as e:
-        return True
-    except ssl.SSLError:
-        return True
-    except:
-        print 'Unexpected error:', sys.exc_info()[0]
-        return True
-    else:
-        redfishAlive = True
-
-    if redfishAlive == True and os.path.exists(watchdog_file_path):
-        os.remove(watchdog_file_path)
-
+    if os.path.exists(watch_redfish_start_file):
+        with open(watch_redfish_start_file, "r") as f:
+            try:
+                flag_redfish_start=int(f.readline().rstrip('\n'))
+            except:
+                flag_redfish_start = 0
+    if flag_redfish_start != 0 and os.path.exists(watchdog_file_path):
+        cmd = 'netstat -nl | grep ":443 "'
+        cmd_msg = subprocess.check_output(cmd, shell=True)
+        if len(cmd_msg) > 0:
+            os.remove(watchdog_file_path)
     return True
 
 def watch_event_service():
