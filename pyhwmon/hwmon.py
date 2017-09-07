@@ -319,6 +319,7 @@ class Hwmons():
 				idFilter = 'Accepted password for admin'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
+					severity = Event.SEVERITY_OKAY
 					event_dir = 0
 					event_type = 0x6f
 					evd1 = 0x0
@@ -355,6 +356,7 @@ class Hwmons():
 				idFilter = 'Close session'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
+					severity = Event.SEVERITY_OKAY
 					event_dir = 1
 					event_type = 0x6f
 					evd1 = 0x1
@@ -367,6 +369,7 @@ class Hwmons():
 				idFilter = 'Timeout'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
+					severity = Event.SEVERITY_OKAY
 					event_dir = 1
 					event_type = 0x6f
 					evd1 = 0x1
