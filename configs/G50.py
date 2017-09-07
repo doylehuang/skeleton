@@ -243,6 +243,12 @@ APPS = {
         'monitor_process' : True,
         'process_name'	  : 'pcie-device-temperature.exe',
     },
+    'sntp_sync_period' : {
+        'system_state'    : 'BMC_READY',
+        'start_process'   : True,
+        'monitor_process' : True,
+        'process_name'    : 'sntp_sync_period.exe',
+    },
 }
 
 CACHED_INTERFACES = {

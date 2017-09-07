@@ -761,8 +761,6 @@ class Hwmons():
 				if 'sensornumber' in hwmon and hwmon['sensornumber'] >= 0x83 and hwmon['sensornumber'] <= 0x88:
 					self.psu_state[objpath] = 0x0
 					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.check_pmbus_state,objpath, hwmon_path, hwmon)
-				elif 'sensornumber' in hwmon and hwmon['sensornumber'] == 0x81:
-					self.check_ntp_init_status(hwmon)
 				elif 'sensornumber' in hwmon and hwmon['sensornumber'] == 0x8B:
 					self.throttle_state[objpath] = 0
 					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.check_throttle_state,objpath, hwmon_path, hwmon)
@@ -831,41 +829,10 @@ class Hwmons():
 
 				if last_sensor_number >= 0x83 and last_sensor_number <= 0x88:
 					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.check_pmbus_state,objpath, hwmons)
-				elif last_sensor_number == 0x81:
-					self.check_ntp_init_status(hwmon)
 				else:
 					if hwmon.has_key('poll_interval'):
 						glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.sensor_polling,objpath, hwmons)
 				self.sensors[objpath]=True
-
-	def check_ntp_init_status(self, hwmon):
-		status = None
-		ntp_init_status = '/var/tmp/ntp_init_status'
-		try:
-			with open(ntp_init_status, 'r') as f:
-				status = int(f.readline())
-		except IOError as e:
-			print e
-			return
-		except ValueError as e:
-			print e
-			return
-
-		event_dir = 0
-		event_type = 0x71
-		sensor_type = int(hwmon['sensor_type'], 0)
-		sensor_number = hwmon['sensornumber']
-		if status == 0:
-			evd1 = 0x01
-			severity = Event.SEVERITY_INFO
-		else:
-			evd1 = 0x03
-			severity = Event.SEVERITY_CRIT
-		log = Event.from_binary(severity, sensor_type, sensor_number, \
-				event_dir | event_type, evd1)
-		self.event_manager.create(log)
-
-		os.remove(ntp_init_status)
 
 	def checkPmbusHwmon(self, instance_name, dpath):
 		if instance_name == "8-0058":
