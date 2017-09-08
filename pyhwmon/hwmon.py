@@ -332,6 +332,7 @@ class Hwmons():
 				idFilter = 'Failed password for admin'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
+					severity = Event.SEVERITY_CRIT
 					event_dir = 0
 					event_type = 0x6f
 					evd1 = 0x2
@@ -344,6 +345,7 @@ class Hwmons():
 				idFilter = 'Invalid user'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
+					severity = Event.SEVERITY_CRIT
 					event_dir = 0
 					event_type = 0x6f
 					evd1 = 0x2
