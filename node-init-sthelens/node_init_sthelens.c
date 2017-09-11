@@ -98,6 +98,9 @@ main(int argc, char *argv[])
     sprintf(buff_path, "ln -s /usr/lib/python2.7/site-packages/subprocess32.py /usr/lib/python2.7/site-packages/subprocess.py");
     system(buff_path);
 
+    /* Check the ntp server address in EEPROM */
+    system("python /usr/sbin/ntp_eeprom.py --check-ntp");
+
     /* Init pmbus node */
     for(i=1; i<=PSU_NUM; i++)
     {
@@ -126,9 +129,6 @@ main(int argc, char *argv[])
         printf("%s\n", buff_path);
         system(buff_path);
     }
-
-    /* Check the ntp server address in EEPROM */
-    system("python /usr/sbin/ntp_eeprom.py --check-ntp");
 
     /* Init PCIE slot present GPIO*/
     init_pcie_slot_gpio();
