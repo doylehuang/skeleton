@@ -1146,28 +1146,33 @@ FAN_ALGORITHM_CONFIG = {
             "0x1D", #base sensor number
             "6", #releate sensor list size
         ],
+#Profile #1 FIO inlet sensor 1
     'OPEN_LOOP_PARAM':
         [
             '0',
-            '2',
-            '-60',
+            '1',
+            '-5',
             '25',
-            '35',
-            '40',
+            '38',
+            '20',
             '100',
         ],
     'OPEN_LOOP_GROUPS_1':
         [
-            "/org/openbmc/sensors/temperature/TMP4",
+            "/org/openbmc/sensors/temperature/TMP",
+            "SensorNumberList", #notfity following setting about SensorNumberList
+            "0x05", #base sensor number
+            "1", #releate sensor list size
             #Thermal team only watch temp4 ambinet
         ],
+#Profile #2 GPU1~8, Treal
     'CLOSE_LOOP_PARAM_1' :
         [
             '0.35',
             '-0.015',
             '0.4',
             '70',
-            '85',
+            '81',
         ],
     'CLOSE_LOOP_GROUPS_1':
         [
@@ -1176,13 +1181,14 @@ FAN_ALGORITHM_CONFIG = {
             "0x41", #base sensor number
             "8", #releate sensor list size
         ],
+#Profile #3 PEX9797 1~4, Treal
     'CLOSE_LOOP_PARAM_2' :
         [
             '0.35',
             '-0.015',
             '0.4',
             '90',
-            '85',
+            '111',
         ],
     'CLOSE_LOOP_GROUPS_2':
         [
@@ -1191,12 +1197,13 @@ FAN_ALGORITHM_CONFIG = {
             "0x37", #base sensor number
             "4", #releate sensor list size
         ],
+#Profile #4 HBM1~8, Treal
     'CLOSE_LOOP_PARAM_3' :
         [
-            '0.35',
-            '-0.015',
+            '0.7',
+            '-0.03',
             '0.4',
-            '80',
+            '75',
             '85',
         ],
     'CLOSE_LOOP_GROUPS_3':
@@ -1206,13 +1213,14 @@ FAN_ALGORITHM_CONFIG = {
             "0x62", #base sensor number
             "8", #releate sensor list size
         ],
+#Profile #5 Storey Peak sensor, Treal
     'CLOSE_LOOP_PARAM_4' :
         [
             '0.35',
             '-0.015',
             '0.4',
             '75',
-            '85',
+            '86',
         ],
     'CLOSE_LOOP_GROUPS_4':
         [
@@ -1221,13 +1229,14 @@ FAN_ALGORITHM_CONFIG = {
             "0x74", #base sensor number
             "1", #releate sensor list size
         ],
+#Profile #5 Storey Peak sensor, Treal
     'CLOSE_LOOP_PARAM_5' :
         [
             '0.35',
             '-0.015',
             '0.4',
             '75',
-            '85',
+            '86',
         ],
     'CLOSE_LOOP_GROUPS_5':
         [
@@ -1236,13 +1245,14 @@ FAN_ALGORITHM_CONFIG = {
             "0x75", #base sensor number
             "1", #releate sensor list size
         ],
+#Profile #6 AVA card sensor, Treal
     'CLOSE_LOOP_PARAM_6' :
         [
             '0.35',
             '-0.015',
             '0.4',
             '64',
-            '85',
+            '78',
         ],
     'CLOSE_LOOP_GROUPS_6':
         [
