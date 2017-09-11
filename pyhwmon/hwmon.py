@@ -305,6 +305,7 @@ class Hwmons():
 		return True
 
 	def sesson_audit_check(self, objpath, attribute, hwmon):
+		session_audit_objpath = "/org/openbmc/sensors/session_audit"
 		try:
 			sensor_type = int(hwmon['sensor_type'], 0)
 			sensor_number = hwmon['sensornumber']
@@ -319,67 +320,32 @@ class Hwmons():
 				idFilter = 'Accepted password for admin'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
-					severity = Event.SEVERITY_OKAY
-					event_dir = 0
-					event_type = 0x6f
-					evd1 = 0x0
-					evd2 = 0x1
-					evd3 = 0x2
-					log = Event.from_binary(severity, sensor_type, sensor_number, \
-								event_dir | event_type, evd1, evd2, evd3)
-					self.event_manager.create(log)
+					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+											"Asserted",  "SSH Activated", "SSH Activated")
 
 				idFilter = 'Failed password for admin'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
-					severity = Event.SEVERITY_CRIT
-					event_dir = 0
-					event_type = 0x6f
-					evd1 = 0x2
-					evd2 = 0x1
-					evd3 = 0x2
-					log = Event.from_binary(severity, sensor_type, sensor_number, \
-								event_dir | event_type, evd1, evd2, evd3)
-					self.event_manager.create(log)
+					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+											"Asserted",  "SSH Failed Password", "SSH Failed Password")
 
 				idFilter = 'Invalid user'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
-					severity = Event.SEVERITY_CRIT
-					event_dir = 0
-					event_type = 0x6f
-					evd1 = 0x2
-					evd2 = 0x1
-					evd3 = 0x2
-					log = Event.from_binary(severity, sensor_type, sensor_number, \
-								event_dir | event_type, evd1, evd2, evd3)
-					self.event_manager.create(log)
+					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+											"Asserted",  "SSH Invalid User", "SSH Invalid User")
 
 				idFilter = 'Close session'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
-					severity = Event.SEVERITY_OKAY
-					event_dir = 1
-					event_type = 0x6f
-					evd1 = 0x1
-					evd2 = 0x1
-					evd3 = 0x10
-					log = Event.from_binary(severity, sensor_type, sensor_number, \
-								event_dir | event_type, evd1, evd2, evd3)
-					self.event_manager.create(log)
+					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+											"Deasserted",  "SSH Closed Session By Command", "SSH Closed Session By Command")
 
 				idFilter = 'Timeout'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
-					severity = Event.SEVERITY_OKAY
-					event_dir = 1
-					event_type = 0x6f
-					evd1 = 0x1
-					evd2 = 0x1
-					evd3 = 0x18
-					log = Event.from_binary(severity, sensor_type, sensor_number, \
-								event_dir | event_type, evd1, evd2, evd3)
-					self.event_manager.create(log)
+					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+											"Deasserted",  "SSH Closed Session By Timeout", "SSH Closed Session By Timeout")
 
 			file.close()
 			os.remove(patch)

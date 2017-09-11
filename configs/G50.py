@@ -1444,5 +1444,51 @@ BMC_LOGEVENT_CONFIG = {
 			},
 		},
 	},
+	'Session Audit Event': {
+		'Record ID': 0,
+		'Record Type': 0x2,
+		'Timestamp': 0,
+		'Generator Id': 0x20,
+		'Evm Rev': 0x04,
+		'Event Type': 0x6F,
+		'Event Data Table': {
+			'SSH Activated': {
+				'Severity': 'OK',
+				'Event Data Information': {
+					'SSH Activated': [0x00, 0x01, 0x02],
+				},
+			},
+			'SSH Failed Password': {
+				'Severity': 'Critical',
+				'Event Data Information': {
+					'SSH Failed Password': [0x02, 0x01, 0x02],
+				},
+			},
+			'SSH Invalid User': {
+				'Severity': 'Critical',
+				'Event Data Information': {
+					'SSH Invalid User': [0x02, 0x01, 0x02],
+				},
+			},
+			'SSH Closed Session By Command': {
+				'Severity': 'OK',
+				'Event Data Information': {
+					'SSH Closed Session By Command': [0x01, 0x01, 0x12],
+				},
+			},
+			'SSH Closed Session By Timeout': {
+				'Severity': 'OK',
+				'Event Data Information': {
+					'SSH Closed Session By Timeout': [0x01, 0x01, 0x22],
+				},
+			},
+			'Redfish Failed Login': {
+				'Severity': 'Critical',
+				'Event Data Information': {
+					'Redfish Failed Login': [0x02, 0x01, 0x01],
+				},
+			},
+		},
+	},
 }
 
