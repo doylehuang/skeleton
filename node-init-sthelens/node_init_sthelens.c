@@ -95,9 +95,6 @@ main(int argc, char *argv[])
     char buff_path[256] = "";
     int i = 0;
 
-    sprintf(buff_path, "ln -s /usr/lib/python2.7/site-packages/subprocess32.py /usr/lib/python2.7/site-packages/subprocess.py");
-    system(buff_path);
-
     /* Check the ntp server address in EEPROM */
     system("python /usr/sbin/ntp_eeprom.py --check-ntp");
 
