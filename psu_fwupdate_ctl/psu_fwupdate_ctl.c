@@ -382,6 +382,37 @@ static void delete_psu_notify(int i2c_bus)
 	}
 }
 
+static void create_psu_fail_flag(int i2c_bus)
+{
+	FILE *fPtr;
+	char psu_path[128];
+	struct stat st = {0};
+
+	if (stat(PSU_PATH, & st) == -1) {
+		mkdir(PSU_PATH, 0777);
+	}
+
+	sprintf(psu_path, "%s/psu_bus_%d_failed", PSU_PATH, i2c_bus);
+	if( access( psu_path, F_OK ) == -1 ) {
+		fPtr = fopen(psu_path,"w");
+		fprintf(fPtr, "%d",i2c_bus);
+		fclose(fPtr);
+	}
+}
+
+static void delete_psu_fail_flag(int i2c_bus)
+{
+	FILE *fPtr;
+	char psu_path[128];
+	char cmd[128];
+
+	sprintf(psu_path, "%s/psu_bus_%d_failed", PSU_PATH, i2c_bus);
+	if( access( psu_path, F_OK ) != -1 ) {
+		sprintf(cmd, "rm -rf %s", psu_path);
+		system(cmd);
+	}
+}
+
 static int start_psu_fwupdate(int psu_number)
 {
 	int i2c_bus;
@@ -420,6 +451,11 @@ static int start_psu_fwupdate(int psu_number)
 	ret = 0;
 
 error_psu_fwupdate:
+    if(ret != 0){
+        create_psu_fail_flag(i2c_bus);
+    }else{
+        delete_psu_fail_flag(i2c_bus);
+    }
 	enable_psu_bus_bind(i2c_bus, i2c_addr);
 
 	delete_psu_notify(i2c_bus);
