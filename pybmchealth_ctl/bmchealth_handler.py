@@ -624,7 +624,7 @@ if __name__ == '__main__':
     bmchealth_check_boot_spi()
     gobject.timeout_add(1000,bmchealth_check_network)
     gobject.timeout_add(1000,bmchealth_check_fw_update_start)
-    gobject.timeout_add(1000,bmchealth_check_i2c, 14)
+    gobject.timeout_add(1000,bmchealth_check_i2c, 5)
     gobject.timeout_add(1000,bmchealth_check_status_led)
     gobject.timeout_add(1000,bmchealth_check_log_rollover)
     gobject.timeout_add(1000,bmchealth_check_memory_utilization)
