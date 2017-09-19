@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <systemd/sd-bus.h>
 
 /* ------------------------------------------------------------------------- */
@@ -207,6 +209,18 @@ on_name_lost(GDBusConnection *connection,
 {
 }
 
+static void save_pid (void) {
+    pid_t pid = 0;
+    FILE *pidfile = NULL;
+    pid = getpid();
+    if (!(pidfile = fopen("/run/button_id.pid", "w"))) {
+        fprintf(stderr, "failed to open pidfile\n");
+        return;
+    }
+    fprintf(pidfile, "%d\n", pid);
+    fclose(pidfile);
+}
+
 gint
 main(gint argc, gchar *argv[])
 {
@@ -217,6 +231,7 @@ main(gint argc, gchar *argv[])
 	cmd.argv = argv;
 
 	guint id;
+    save_pid();
 	loop = g_main_loop_new(NULL, FALSE);
 
 	id = g_bus_own_name(DBUS_TYPE,

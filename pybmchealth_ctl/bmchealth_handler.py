@@ -611,7 +611,16 @@ def bmchealth_check_ecc_errors():
             print "[bmchealth_check_ecc_errors]exception !!!"
     return True
 
+def save_pid():
+    pid = os.getpid()
+    try:
+        with open('/run/bmchealth_handler.pid', 'w') as pidfile:
+            print >>pidfile, pid
+    except IOError:
+        print >>sys.stderr, 'failed to open pidfile'
+
 if __name__ == '__main__':
+    save_pid()
     mainloop = gobject.MainLoop()
     #set bmchealth default value
     bmclogevent_ctl.bmclogevent_set_value(g_bmchealth_obj_path, 0)

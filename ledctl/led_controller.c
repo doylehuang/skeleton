@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <string.h>
 #include <dirent.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <systemd/sd-bus.h>
 
 static int led_stable_state_function(const char *, const char *);
@@ -570,12 +572,25 @@ start_led_services()
 	return rc;
 }
 
+static void save_pid (void) {
+    pid_t pid = 0;
+    FILE *pidfile = NULL;
+    pid = getpid();
+    if (!(pidfile = fopen("/run/led_controller.pid", "w"))) {
+        fprintf(stderr, "failed to open pidfile\n");
+        return;
+    }
+    fprintf(pidfile, "%d\n", pid);
+    fclose(pidfile);
+}
+
 int
 main(void)
 {
 	int rc = 0;
 
 	/* This call is not supposed to return. If it does, then an error */
+    save_pid();
 	rc = start_led_services();
 	if(rc < 0)
 	{

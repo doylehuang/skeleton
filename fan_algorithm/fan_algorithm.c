@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
-
+#include <unistd.h>
 
 
 #define I2C_CLIENT_PEC          0x04    /* Use Packet Error Checking */
@@ -1110,8 +1110,21 @@ static void inital_fan_pid_shm()
 	}
 }
 
+static void save_pid (void) {
+    pid_t pid = 0;
+    FILE *pidfile = NULL;
+    pid = getpid();
+    if (!(pidfile = fopen("/run/fan_algorithm.pid", "w"))) {
+        fprintf(stderr, "failed to open pidfile\n");
+        return;
+    }
+    fprintf(pidfile, "%d\n", pid);
+    fclose(pidfile);
+}
+
 int main(int argc, char *argv[])
 {
+    save_pid();
 	inital_fan_pid_shm();
 	return fan_control_algorithm_monitor();
 }

@@ -74,8 +74,21 @@ int pmbus_scan()
     }
 }
 
+static void save_pid (void) {
+    pid_t pid = 0;
+    FILE *pidfile = NULL;
+    pid = getpid();
+    if (!(pidfile = fopen("/run/pmbus_scanner.pid", "w"))) {
+        fprintf(stderr, "failed to open pidfile\n");
+        return;
+    }
+    fprintf(pidfile, "%d\n", pid);
+    fclose(pidfile);
+}
+
 int main(void)
 {
+    save_pid();
     pmbus_scan();
     return 0;
 }

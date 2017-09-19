@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <openbmc_intf.h>
 #include <openbmc.h>
 
@@ -101,6 +103,17 @@ on_name_lost (GDBusConnection *connection,
 {
 }
 
+static void save_pid (void) {
+    pid_t pid = 0;
+    FILE *pidfile = NULL;
+    pid = getpid();
+    if (!(pidfile = fopen("/run/control_bmc.pid", "w"))) {
+        fprintf(stderr, "failed to open pidfile\n");
+        return;
+    }
+    fprintf(pidfile, "%d\n", pid);
+    fclose(pidfile);
+}
 
 /*----------------------------------------------------------------*/
 /* Main Event Loop                                                */
@@ -114,6 +127,7 @@ main (gint argc, gchar *argv[])
   cmd.argv = argv;
 
   guint id;
+  save_pid();
   loop = g_main_loop_new (NULL, FALSE);
   cmd.loop = loop;
 

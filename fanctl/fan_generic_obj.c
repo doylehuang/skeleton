@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <systemd/sd-bus.h>
 
 typedef enum {
@@ -361,12 +363,25 @@ start_fan_services()
 	return rc;
 }
 
+static void save_pid (void) {
+    pid_t pid = 0;
+    FILE *pidfile = NULL;
+    pid = getpid();
+    if (!(pidfile = fopen("/run/fan_generic_obj.pid", "w"))) {
+        fprintf(stderr, "failed to open pidfile\n");
+        return;
+    }
+    fprintf(pidfile, "%d\n", pid);
+    fclose(pidfile);
+}
+
 int
 main(void)
 {
 	int rc = 0;
 
 	/* This call is not supposed to return. If it does, then an error */
+    save_pid();
 	rc = start_fan_services();
 	if(rc < 0) {
 		fprintf(stderr, "Error starting FAN Services. Exiting");

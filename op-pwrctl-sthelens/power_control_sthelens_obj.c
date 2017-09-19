@@ -10,6 +10,8 @@
 #include <openbmc_intf.h>
 #include <openbmc.h>
 #include <gpio.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 /* ------------------------------------------------------------------------- */
 static const gchar* dbus_object_path = "/org/openbmc/control";
@@ -299,6 +301,18 @@ on_name_lost(GDBusConnection *connection,
 /*----------------------------------------------------------------*/
 /* Main Event Loop                                                */
 
+static void save_pid (void) {
+    pid_t pid = 0;
+    FILE *pidfile = NULL;
+    pid = getpid();
+    if (!(pidfile = fopen("/run/power_control_sthelens.pid", "w"))) {
+        fprintf(stderr, "failed to open pidfile\n");
+        return;
+    }
+    fprintf(pidfile, "%d\n", pid);
+    fclose(pidfile);
+}
+
 gint
 main(gint argc, gchar *argv[])
 {
@@ -308,6 +322,7 @@ main(gint argc, gchar *argv[])
 	cmd.argv = argv;
 
 	guint id;
+    save_pid();
 	loop = g_main_loop_new(NULL, FALSE);
 
 	id = g_bus_own_name(DBUS_TYPE,

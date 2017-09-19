@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <systemd/sd-bus.h>
 
 typedef struct {
@@ -220,8 +222,21 @@ void open_gpio()
 	}
 }
 
+static void save_pid (void) {
+    pid_t pid = 0;
+    FILE *pidfile = NULL;
+    pid = getpid();
+    if (!(pidfile = fopen("/run/cable_led.pid", "w"))) {
+        fprintf(stderr, "failed to open pidfile\n");
+        return;
+    }
+    fprintf(pidfile, "%d\n", pid);
+    fclose(pidfile);
+}
+
 int main(gint argc, gchar *argv[])
 {
+    save_pid();
 	init_cable_gpio_mapping();
 	open_gpio();
 	check_cable_status();

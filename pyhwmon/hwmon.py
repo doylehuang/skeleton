@@ -921,9 +921,18 @@ class Hwmons():
 			os.remove(WATCHDOG_FILE_PATH)
 		return True
 
+def save_pid():
+	pid = os.getpid()
+	try:
+		with open('/run/hwmon.pid', 'w') as pidfile:
+			print >>pidfile, pid
+	except IOError:
+		print >>sys.stderr, 'failed to open pidfile'
+
 if __name__ == '__main__':
 
 	os.nice(-19)
+	save_pid()
 	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 	bus = get_dbus()
 	root_sensor = Hwmons(bus)

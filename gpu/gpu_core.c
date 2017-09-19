@@ -368,9 +368,22 @@ void gpu_data_scan()
 	}
 }
 
+static void save_pid (void) {
+    pid_t pid = 0;
+    FILE *pidfile = NULL;
+    pid = getpid();
+    if (!(pidfile = fopen("/run/gpu_core.pid", "w"))) {
+        fprintf(stderr, "failed to open pidfile\n");
+        return;
+    }
+    fprintf(pidfile, "%d\n", pid);
+    fclose(pidfile);
+}
+
 int
 main(void)
 {
+    save_pid();
 	gpu_data_scan();
 	return 0;
 }

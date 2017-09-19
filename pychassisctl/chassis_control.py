@@ -1,5 +1,6 @@
 #!/usr/bin/python -u
 
+import os
 import sys
 import uuid
 import gobject
@@ -216,7 +217,16 @@ class ChassisControlObject(DbusProperties, DbusObjectManager):
         print "Emergency Shutdown!"
         self.powerOff()
 
+def save_pid():
+    pid = os.getpid()
+    try:
+        with open('/run/chassis_control.pid', 'w') as pidfile:
+            print >>pidfile, pid
+    except IOError:
+        print >>sys.stderr, 'failed to open pidfile'
+
 if __name__ == '__main__':
+    save_pid()
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
     bus = get_dbus()
