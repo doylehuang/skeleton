@@ -104,24 +104,12 @@ APPS = {
         'process_name'    : 'sensor_manager2.py',
         'args'            : [SYSTEM_NAME]
     },
-    'host_watchdog' : {
-        'system_state'    : 'BMC_STARTING',
-        'start_process'   : True,
-        'monitor_process' : True,
-        'process_name'    : 'host_watchdog.exe',
-    },
     'power_control' : {
         'system_state'    : 'BMC_STARTING',
         'start_process'   : True,
         'monitor_process' : True,
         'process_name' : 'power_control_sthelens.exe',
         'args' : ['3000', '10']
-    },
-    'power_button' : {
-        'system_state'    : 'BMC_STARTING',
-        'start_process'   : True,
-        'monitor_process' : True,
-        'process_name'    : 'button_power.exe',
     },
     'led_control' : {
         'system_state'    : 'BMC_STARTING',
@@ -134,13 +122,6 @@ APPS = {
         'start_process'   : True,
         'monitor_process' : True,
         'process_name'    : 'bmc_update.py',
-    },
-    'download_manager' : {
-        'system_state'    : 'BMC_STARTING',
-        'start_process'   : True,
-        'monitor_process' : True,
-        'process_name'    : 'download_manager.py',
-        'args'            : [SYSTEM_NAME]
     },
     'chassis_control' : {
         'system_state'    : 'BMC_STARTING2',
