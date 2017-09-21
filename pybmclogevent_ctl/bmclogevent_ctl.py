@@ -17,10 +17,19 @@ DBUS_INTERFACE = 'org.freedesktop.DBus.Properties'
 SENSOR_VALUE_INTERFACE = 'org.openbmc.SensorValue'
 HWMON_INTERFACE = 'org.openbmc.HwmonSensor'
 
-_EVENT_MANAGER = EventManager()
+_EVENT_MANAGER = None
+
+def _get_event_manager():
+    '''
+    Defer instantiation of _EVENT_MANAGER to the moment it is really needed.
+    '''
+    global _EVENT_MANAGER
+    if _EVENT_MANAGER is None:
+        _EVENT_MANAGER = obmc.events.EventManager()
+    return _EVENT_MANAGER
 
 def bmclogevent_get_log_rollover():
-    return _EVENT_MANAGER.rollover_count()
+    return _get_event_manager().rollover_count()
 
 def bmclogevent_set_property_with_dbus(obj_path, intf, property, val):
     try:
@@ -131,7 +140,7 @@ def BmcLogEventMessages(objpath = "", s_event_identify="", s_assert="", \
     if isinstance(sensor_number, basestring):
         sensor_number =  int(sensor_number , 16)
     log = Event.from_binary(serverity, sensortype, sensor_number, event_type | b_assert, evd1, evd2, evd3)
-    logid=_EVENT_MANAGER.create(log)
+    logid=_get_event_manager().create(log)
     print('BmcLogEventMessages added log with record ID 0x%04X' % logid)
     result['logid'] = logid
     if s_event_identify == "BMC Health":
