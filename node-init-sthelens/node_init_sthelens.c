@@ -107,7 +107,11 @@ void read_psu_info(int bus_no)
     /*read part number*/
     sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x9c -r 32 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
     system(buff_path);
-    /**read PowerCapacityWatts*/
+}
+
+void read_psu_power_capacity(int bus_no)
+{
+    char buff_path[256] = "";
     sprintf(buff_path, "pmbus.exe -b %d -s 0x58 -r -c CAPABILITY >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
     system(buff_path);
 }
@@ -124,17 +128,19 @@ main(int argc, char *argv[])
     /* Init pmbus node */
     for(i=1; i<=PSU_NUM; i++)
     {
-	/* Liteon PS-2162-1F Solution */
-	sprintf(buff_path, "i2craw.exe %d 0x58 -w \"0x05 0x04 0x01 0x1b 0x7c 0xff\"", PHYSICAL_I2C+i);
-	printf("%s\n", buff_path);
-	system(buff_path);
+	    /* Liteon PS-2162-1F Solution */
+	    sprintf(buff_path, "i2craw.exe %d 0x58 -w \"0x05 0x04 0x01 0x1b 0x7c 0xff\"", PHYSICAL_I2C+i);
+	    printf("%s\n", buff_path);
+	    system(buff_path);
 
-	read_psu_info(PHYSICAL_I2C+i);
+	    read_psu_info(PHYSICAL_I2C+i);
 
-	/* Add new pmbus device */
+	    /* Add new pmbus device */
         sprintf(buff_path, "echo pmbus 0x58 > /sys/bus/i2c/devices/i2c-%d/new_device", PHYSICAL_I2C+i);
         printf("%s\n", buff_path);
         system(buff_path);
+        /*read PowerCapacityWatts*/
+        read_psu_power_capacity(PHYSICAL_I2C+i);
     }
 
     /* Init lm25066 node */
