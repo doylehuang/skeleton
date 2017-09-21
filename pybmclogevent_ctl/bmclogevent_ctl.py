@@ -25,7 +25,7 @@ def _get_event_manager():
     '''
     global _EVENT_MANAGER
     if _EVENT_MANAGER is None:
-        _EVENT_MANAGER = obmc.events.EventManager()
+        _EVENT_MANAGER = EventManager()
     return _EVENT_MANAGER
 
 def bmclogevent_get_log_rollover():
