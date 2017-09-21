@@ -429,6 +429,7 @@ def _add_m2_temperature_sensor(configs, index, sensornumber):
         'value': -1,
         'status_change_count': 0,
         'reading_error_count': 0,
+        'pcie_slot_index': 9,
         }
     if objpath in configs:
         configs[objpath].append(config)
@@ -787,6 +788,7 @@ def _add_fpga1_sensor(configs, index, sensornumber, sensor_name, bus_number):
         'value': -1,
         'status_change_count': 0,
         'reading_error_count': 0,
+        'pcie_slot_index': 10,
         }
     if objpath in configs:
         configs[objpath].append(config)
@@ -815,6 +817,7 @@ def _add_fpga2_sensor(configs, index, sensornumber, sensor_name, bus_number):
         'value': -1,
         'status_change_count': 0,
         'reading_error_count': 0,
+        'pcie_slot_index': 10,
         }
     if objpath in configs:
         configs[objpath].append(config)
