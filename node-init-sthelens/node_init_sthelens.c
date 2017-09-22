@@ -109,13 +109,6 @@ void read_psu_info(int bus_no)
     system(buff_path);
 }
 
-void read_psu_power_capacity(int bus_no)
-{
-    char buff_path[256] = "";
-    sprintf(buff_path, "pmbus.exe -b %d -s 0x58 -r -c CAPABILITY >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
-    system(buff_path);
-}
-
 int
 main(int argc, char *argv[])
 {
@@ -139,8 +132,6 @@ main(int argc, char *argv[])
         sprintf(buff_path, "echo pmbus 0x58 > /sys/bus/i2c/devices/i2c-%d/new_device", PHYSICAL_I2C+i);
         printf("%s\n", buff_path);
         system(buff_path);
-        /*read PowerCapacityWatts*/
-        read_psu_power_capacity(PHYSICAL_I2C+i);
     }
 
     /* Init lm25066 node */
