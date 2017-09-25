@@ -593,7 +593,6 @@ if __name__ == '__main__':
     glib.timeout_add_seconds(5,bmchealth_check_log_rollover)
     glib.timeout_add_seconds(5,bmchealth_check_memory_utilization)
     glib.timeout_add_seconds(20,bmchealth_check_empty_invalid_fru)
-    glib.timeout_add_seconds(5,bmchealth_check_CPU_utilization)
     glib.timeout_add_seconds(5,bmchealth_check_alignment_traps)
     glib.timeout_add_seconds(10,bmchealth_kick_watchdog)
     print "bmchealth_handler control starting"
