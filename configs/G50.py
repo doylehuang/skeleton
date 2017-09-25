@@ -218,12 +218,6 @@ APPS = {
         'monitor_process' : True,
         'process_name'    : 'pmbus_scanner.exe',
     },
-    'pcie-device-temperature' : {
-        'system_state'	  : 'BMC_READY',
-        'start_process'   : True,
-        'monitor_process' : True,
-        'process_name'	  : 'pcie-device-temperature.exe',
-    },
     'sntp_sync_period' : {
         'system_state'    : 'BMC_STARTING',
         'start_process'   : True,
@@ -391,32 +385,6 @@ def _add_gpu_mem_temperature_sensor(configs, index, sensornumber):
         'status_change_count': 0,
         'reading_error_count': 0,
         'ready': 0,
-        }
-    if objpath in configs:
-        configs[objpath].append(config)
-    else:
-        configs[objpath] = []
-        configs[objpath].append(config)
-
-def _add_m2_temperature_sensor(configs, index, sensornumber):
-    objpath = '/org/openbmc/sensors/M2/M2_TMP'
-    config = {
-        'critical_upper': 85,
-        'positive_hysteresis': 2,
-        'device_node': '/tmp/pcie/mdot2_%d_temp' % index,
-        'poll_interval': 5000,
-        'reading_type': 0x01,
-        'scale': 1,
-        'sensor_name': 'M.2 %d Temp' % index,
-        'sensor_type': '0x01',
-        'sensornumber': sensornumber,
-        'standby_monitor': False,
-        'units': 'C',
-        'index': index,
-        'value': -1,
-        'status_change_count': 0,
-        'reading_error_count': 0,
-        'pcie_slot_index': 9,
         }
     if objpath in configs:
         configs[objpath].append(config)
@@ -754,62 +722,6 @@ def _add_temp_sensor(configs, index, sensornumber, sensor_name, bus_number):
         configs[objpath] = []
         configs[objpath].append(config)
 
-def _add_fpga1_sensor(configs, index, sensornumber, sensor_name, bus_number):
-    objpath = '/org/openbmc/sensors/temperature/FPGA1_TMP'
-    config = {
-        'bus_number': bus_number,
-        'critical_upper':83,
-        'positive_hysteresis': 2,
-        'device_node': 'temp1_input',
-        'object_path' : 'sensors/temperature/FPGA1_TMP',
-        'poll_interval' : 5000,
-        'reading_type': 0x01,
-        'scale': 1000,
-        'sensor_name': sensor_name,
-        'sensor_type' : '0x01',
-        'sensornumber': sensornumber,
-        'index': index,
-        'standby_monitor': False,
-        'emergency_enabled' : True,
-        'units' : 'C',
-        'value': -1,
-        'status_change_count': 0,
-        'reading_error_count': 0,
-        'pcie_slot_index': 10,
-        }
-    if objpath in configs:
-        configs[objpath].append(config)
-    else:
-        configs[objpath] = []
-        configs[objpath].append(config)
-
-def _add_fpga2_sensor(configs, index, sensornumber, sensor_name, bus_number):
-    objpath = '/org/openbmc/sensors/temperature/FPGA2_TMP'
-    config = {
-        'bus_number': bus_number,
-        'device_node': 'temp2_input',
-        'object_path' : 'sensors/temperature/FPGA2_TMP',
-        'poll_interval' : 5000,
-        'reading_type': 0x01,
-        'scale': 1000,
-        'sensor_name': sensor_name,
-        'sensor_type' : '0x01',
-        'sensornumber': sensornumber,
-        'index': index,
-        'standby_monitor': False,
-        'emergency_enabled' : True,
-        'units' : 'C',
-        'value': -1,
-        'status_change_count': 0,
-        'reading_error_count': 0,
-        'pcie_slot_index': 10,
-        }
-    if objpath in configs:
-        configs[objpath].append(config)
-    else:
-        configs[objpath] = []
-        configs[objpath].append(config)
-
 def _add_entity_presence(configs, sensornumber):
     config = ['/org/openbmc/sensors/entity_presence', {
         'device_node': '',
@@ -967,12 +879,6 @@ _add_gpu_temperature_sensor(HWMON_SENSOR_CONFIG, 5, 0x45)
 _add_gpu_temperature_sensor(HWMON_SENSOR_CONFIG, 6, 0x46)
 _add_gpu_temperature_sensor(HWMON_SENSOR_CONFIG, 7, 0x47)
 _add_gpu_temperature_sensor(HWMON_SENSOR_CONFIG, 8, 0x48)
-_add_m2_temperature_sensor(HWMON_SENSOR_CONFIG, 1, 0x70)
-_add_m2_temperature_sensor(HWMON_SENSOR_CONFIG, 2, 0x71)
-_add_m2_temperature_sensor(HWMON_SENSOR_CONFIG, 3, 0x72)
-_add_m2_temperature_sensor(HWMON_SENSOR_CONFIG, 4, 0x73)
-_add_fpga1_sensor(HWMON_SENSOR_CONFIG, 1, 0x74, 'FPGA Die Temp', '30-004c')
-_add_fpga2_sensor(HWMON_SENSOR_CONFIG, 1, 0x75, 'FPGA Ambient Temp', '30-004c')
 _add_fan_pwm_sensor(HWMON_SENSOR_CONFIG, 1, 0x1D)
 _add_fan_pwm_sensor(HWMON_SENSOR_CONFIG, 2, 0x1E)
 _add_fan_pwm_sensor(HWMON_SENSOR_CONFIG, 3, 0x1F)
@@ -1208,54 +1114,6 @@ FAN_ALGORITHM_CONFIG = {
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x62", #base sensor number
             "8", #releate sensor list size
-        ],
-#Profile #5 Storey Peak sensor, Treal
-    'CLOSE_LOOP_PARAM_4' :
-        [
-            '0.35',
-            '-0.015',
-            '0.4',
-            '75',
-            '86',
-        ],
-    'CLOSE_LOOP_GROUPS_4':
-        [
-            "/org/openbmc/sensors/temperature/FPGA1_TMP",
-            "SensorNumberList", #notfity following setting about SensorNumberList
-            "0x74", #base sensor number
-            "1", #releate sensor list size
-        ],
-#Profile #5 Storey Peak sensor, Treal
-    'CLOSE_LOOP_PARAM_5' :
-        [
-            '0.35',
-            '-0.015',
-            '0.4',
-            '75',
-            '86',
-        ],
-    'CLOSE_LOOP_GROUPS_5':
-        [
-            "/org/openbmc/sensors/temperature/FPGA2_TMP",
-            "SensorNumberList", #notfity following setting about SensorNumberList
-            "0x75", #base sensor number
-            "1", #releate sensor list size
-        ],
-#Profile #6 AVA card sensor, Treal
-    'CLOSE_LOOP_PARAM_6' :
-        [
-            '0.35',
-            '-0.015',
-            '0.4',
-            '64',
-            '78',
-        ],
-    'CLOSE_LOOP_GROUPS_6':
-        [
-            "/org/openbmc/sensors/M2/M2_TMP",
-            "SensorNumberList", #notfity following setting about SensorNumberList
-            "0x70", #base sensor number
-            "4", #releate sensor list size
         ],
 
     'FAN_LED_OFF': ["0xFF"],
