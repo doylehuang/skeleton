@@ -11,13 +11,91 @@ import obmc.dbuslib.propertycacher as PropertyCacher
 from obmc.dbuslib.bindings import get_dbus, DbusProperties, DbusObjectManager
 from obmc.sensors import HwmonSensor as HwmonSensor
 import time
+import subprocess
+import json
 
 DBUS_NAME = 'org.openbmc.Sensors'
 DBUS_INTERFACE = 'org.freedesktop.DBus.Properties'
 SENSOR_VALUE_INTERFACE = 'org.openbmc.SensorValue'
 HWMON_INTERFACE = 'org.openbmc.HwmonSensor'
+RECORD_CONTROL_LED_FILE = '/run/obmc/record_control_led'
 
 _EVENT_MANAGER = None
+
+#light: 1, light on; 0:light off
+def bmchealth_set_status_led(light):
+    if 'GPIO_CONFIG' not in dir(System) or 'BLADE_ATT_LED_N' not in System.GPIO_CONFIG:
+        return
+    try:
+        data_reg_addr = System.GPIO_CONFIG["BLADE_ATT_LED_N"]["data_reg_addr"]
+        offset = System.GPIO_CONFIG["BLADE_ATT_LED_N"]["offset"]
+        inverse = "no"
+        if "inverse" in  System.GPIO_CONFIG["BLADE_ATT_LED_N"]:
+            inverse = System.GPIO_CONFIG["BLADE_ATT_LED_N"]["inverse"]
+        cmd_data = subprocess.check_output("devmem  " + hex(data_reg_addr) , shell=True)
+        cmd_data = cmd_data.rstrip("\n")
+        cur_data = int(cmd_data, 16)
+        if (inverse == "yes"):
+            if (light == 1):
+                cur_data = cur_data & ~(1<<offset)
+            else:
+                cur_data = cur_data | (1<<offset)
+        else:
+            if (light == 1):
+                cur_data = cur_data | (1<<offset)
+            else:
+                cur_data = cur_data & ~(1<<offset)
+
+        set_led_cmd = "devmem  " + hex(data_reg_addr) + " 32 " + hex(cur_data)[:10]
+        os.system(set_led_cmd)
+    except:
+        pass
+
+
+def bmchealth_push_record_control_led(key_str):
+    record_control_led = {}
+    try:
+        with open(RECORD_CONTROL_LED_FILE, "r") as readfile:
+            record_control_led=json.load(readfile)
+    except:
+        pass
+    record_control_led[key_str]  = 0
+    with open(RECORD_CONTROL_LED_FILE, 'w') as writefile:
+        json.dump(record_control_led, writefile)
+    return len(record_control_led)
+
+def bmchealth_pop_record_control_led(key_str):
+    record_control_led = {}
+    try:
+        with open(RECORD_CONTROL_LED_FILE, "r") as readfile:
+            record_control_led=json.load(readfile)
+    except:
+        pass
+    if key_str in record_control_led:
+        del record_control_led[key_str]
+        with open(RECORD_CONTROL_LED_FILE, 'w') as writefile:
+            json.dump(record_control_led, writefile)
+    return len(record_control_led)
+
+def bmchealth_control_status_led(severity = Event.SEVERITY_CRIT, sensor_number = 0, event_dir = 0, evd1 = 0, evd2 = 0, evd3 = 0):
+    if severity !=  Event.SEVERITY_CRIT and event_dir = 0:
+        return
+
+    key_str = str(sensor_number)
+    key_str += "-" + str(evd1)
+    key_str += "-" + str(evd2)
+    key_str += "-" + str(evd3)
+
+    len_control_led = 0
+    if event_dir == 0:
+        len_control_led = bmchealth_push_record_control_led(key_str)
+    else:
+        len_control_led = bmchealth_pop_record_control_led(key_str)
+
+    if len_control_led > 0:
+        bmchealth_set_status_led(1)
+    else:
+        bmchealth_set_status_led(0)
 
 def _get_event_manager():
     '''
@@ -89,6 +167,7 @@ def BmcLogEventMessages(objpath = "", s_event_identify="", s_assert="", \
     b_assert = 0
     event_type = 0
     result = {'logid':0}
+    led_notify = 0
     try:
         if 'BMC_LOGEVENT_CONFIG' not in dir(System) and \
           s_event_identify not in System.BMC_HEALTH_LOGEVENT_CONFIG:
@@ -109,6 +188,9 @@ def BmcLogEventMessages(objpath = "", s_event_identify="", s_assert="", \
             serverity = Event.SEVERITY_WARN
         elif (evd_data['Severity'] == 'OK'):
             serverity = Event.SEVERITY_OKAY
+
+        if 'led_notify' in evd_data:
+            led_notify =  evd_data['led_notify']
 
         evd_data_info = evd_data['Event Data Information'][s_evd_desc]
         if evd_data_info[0] != None:
@@ -146,4 +228,12 @@ def BmcLogEventMessages(objpath = "", s_event_identify="", s_assert="", \
     if s_event_identify == "BMC Health":
         result['evd1'] = evd1
         result['Severity'] = evd_data['Severity']
+    if led_notify == 1 and logid != 0:
+        bmchealth_control_status_led(serverity, sensor_number, b_assert, evd1, evd2, evd3)
     return result
+
+if __name__ == '__main__':
+    if len(sys.argv) == 3:
+        sensor_number = int(sys.argv[1])
+        event_dir =  int(sys.argv[2])
+        bmchealth_control_status_led(sensor_number = sensor_number, event_dir = event_dir)

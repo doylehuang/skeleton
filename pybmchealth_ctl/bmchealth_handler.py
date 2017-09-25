@@ -28,35 +28,6 @@ g_previous_total = 0
 g_previous_idle_cpu = 0
 g_number_of_system = -1
 
-#light: 1, light on; 0:light off
-def bmchealth_set_status_led(light):
-    if 'GPIO_CONFIG' not in dir(System) or 'BLADE_ATT_LED_N' not in System.GPIO_CONFIG:
-        return
-    try:
-        data_reg_addr = System.GPIO_CONFIG["BLADE_ATT_LED_N"]["data_reg_addr"]
-        offset = System.GPIO_CONFIG["BLADE_ATT_LED_N"]["offset"]
-        inverse = "no"
-        if "inverse" in  System.GPIO_CONFIG["BLADE_ATT_LED_N"]:
-            inverse = System.GPIO_CONFIG["BLADE_ATT_LED_N"]["inverse"]
-        cmd_data = subprocess.check_output("devmem  " + hex(data_reg_addr) , shell=True)
-        cmd_data = cmd_data.rstrip("\n")
-        cur_data = int(cmd_data, 16)
-        if (inverse == "yes"):
-            if (light == 1):
-                cur_data = cur_data & ~(1<<offset)
-            else:
-                cur_data = cur_data | (1<<offset)
-        else:
-            if (light == 1):
-                cur_data = cur_data | (1<<offset)
-            else:
-                cur_data = cur_data & ~(1<<offset)
-
-        set_led_cmd = "devmem  " + hex(data_reg_addr) + " 32 " + hex(cur_data)[:10]
-        os.system(set_led_cmd)
-    except:
-        pass
-
 def LogEventBmcHealthMessages(s_assert="", s_event_indicator="", \
                                          s_evd_desc="", data={}):
     try:
@@ -88,17 +59,6 @@ def LogEventBmcHealthMessages(s_assert="", s_event_indicator="", \
                                         'severity_health', s_bmchealth_severity)  
     except:
         print "LogEventBmcHealthMessages error!! " + s_event_indicator
-
-def bmchealth_check_status_led():
-    try:
-        val = bmclogevent_ctl.bmclogevent_get_value_with_dbus(g_bmchealth_obj_path)
-        if (val == 0):
-            bmchealth_set_status_led(0)
-        else:
-            bmchealth_set_status_led(1)
-    except:
-        print "bmchealth_check_status_led Error!!"
-    return True
 
 def bmchealth_check_network():
     carrier_file_path = "/sys/class/net/eth0/carrier"
@@ -640,7 +600,6 @@ if __name__ == '__main__':
     mainloop = glib.MainLoop()
     #set bmchealth default value
     bmclogevent_ctl.bmclogevent_set_value(g_bmchealth_obj_path, 0)
-    bmchealth_set_status_led(0)
     reboot_check_flag()
     bmchealth_fix_and_check_mac()
     bmchealth_check_watchdog()
@@ -650,7 +609,6 @@ if __name__ == '__main__':
     glib.timeout_add_seconds(5,bmchealth_check_network)
     glib.timeout_add_seconds(1,bmchealth_check_fw_update_start)
     glib.timeout_add_seconds(5,bmchealth_check_i2c, 5)
-    glib.timeout_add_seconds(1,bmchealth_check_status_led)
     glib.timeout_add_seconds(5,bmchealth_check_log_rollover)
     glib.timeout_add_seconds(5,bmchealth_check_memory_utilization)
     glib.timeout_add_seconds(20,bmchealth_check_empty_invalid_fru)

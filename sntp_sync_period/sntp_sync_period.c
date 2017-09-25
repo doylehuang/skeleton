@@ -61,6 +61,9 @@ int sntp_sync()
                 sprintf(cmd, "/usr/sbin/eventctl.exe add Critical 0x%x 0x%x 0x%x 0x%x", NTP_SENSOR_TYPE, NTP_SENSOR_NUM, \
                     event_dir_type, evd1);
                 system(cmd);
+
+                sprintf(cmd, "python /usr/sbin/bmclogevent_ctl.py  %d, %d", NTP_SENSOR_NUM, (EVENT_DIR_DEASSERT << 7));
+                system(cmd);
                 assert_ntp_failed = 0;
             } else {
                 gettimeofday(&tv_cur,NULL);
@@ -82,6 +85,9 @@ int sntp_sync()
                 evd1 = EVD_SYNC_TIME_FAIL;
                 sprintf(cmd, "/usr/sbin/eventctl.exe add Critical 0x%x 0x%x 0x%x 0x%x", NTP_SENSOR_TYPE, NTP_SENSOR_NUM, \
                     event_dir_type, evd1);
+                system(cmd);
+
+                sprintf(cmd, "python /usr/sbin/bmclogevent_ctl.py  %d, %d", NTP_SENSOR_NUM, (EVENT_DIR_ASSERT << 7));
                 system(cmd);
                 assert_ntp_failed = 1;
             }

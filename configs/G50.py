@@ -1276,6 +1276,7 @@ BMC_LOGEVENT_CONFIG = {
 	    'Event Data Table': {
 			'Network Error': {
 				'Severity': 'Critical',
+				'led_notify': 1,
 				'Event Data Information': {
 					'Link Down':	[0xA1, 0x1, None],
 					'DHCP Failure':	[0xA1, 0x2, None],
@@ -1344,6 +1345,7 @@ BMC_LOGEVENT_CONFIG = {
 			},
 			'No MAC address programmed': {
 				'Severity': 'Critical',
+				'led_notify': 1,
 				'Event Data Information': {
 					'No MAC address programmed':	[0xAC, None, None],
 				},
@@ -1366,6 +1368,7 @@ BMC_LOGEVENT_CONFIG = {
 			},
 			'Empty Invalid FRU': {
 				'Severity': 'Critical',
+				'led_notify': 1,
 				'Event Data Information': {
 					'Empty Invalid FRU':	[0xA4, 'fru_id', None],
 				},
@@ -1388,6 +1391,7 @@ BMC_LOGEVENT_CONFIG = {
 		'Event Data Table': {
 			'Entity Presence': {
 				'Severity': 'Critical',
+				'led_notify': 1,
 				'Event Data Information': {
 					'Entity Presence':	[0xA1, 'entity_device', 'entity_index'],
 				},
@@ -1404,6 +1408,7 @@ BMC_LOGEVENT_CONFIG = {
 		'Event Data Table': {
 			'Management Subsystem Health': {
 				'Severity': 'Critical',
+				'led_notify': 1,
 				'Event Data Information': {
 					'Management Subsystem Health':	['event_status', 'sensor_number', 0xFF],
 				},
