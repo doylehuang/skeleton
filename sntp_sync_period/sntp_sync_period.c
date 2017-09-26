@@ -53,46 +53,6 @@ int sntp_sync()
         stat = WEXITSTATUS(system(cmd));
         printf("sntp synced stat = %d\n", stat);
 
-        if (stat == NTP_SYNC_SUCCESS) {
-            if (assert_ntp_failed) {
-                printf("De-Assert NTP sync failed\n");
-                event_dir_type = (EVENT_DIR_DEASSERT << 7) | NTP_EVENT_TYPE;
-                evd1 = EVD_SYNC_TIME_FAIL;
-                sprintf(cmd, "/usr/sbin/eventctl.exe add Critical 0x%x 0x%x 0x%x 0x%x", NTP_SENSOR_TYPE, NTP_SENSOR_NUM, \
-                    event_dir_type, evd1);
-                system(cmd);
-
-                sprintf(cmd, "python /usr/sbin/bmclogevent_ctl.py  %d, %d", NTP_SENSOR_NUM, (EVENT_DIR_DEASSERT << 7));
-                system(cmd);
-                assert_ntp_failed = 0;
-            } else {
-                gettimeofday(&tv_cur,NULL);
-                timeshift = abs(tv_cur.tv_sec - tv_pre.tv_sec);
-                // If the timestamp diff is more than 1 second, we should log the synced success event
-                if (timeshift > 1) {
-                    printf("Synced with NTP server\n");
-                    event_dir_type = (EVENT_DIR_ASSERT << 7) | NTP_EVENT_TYPE;
-                    evd1 = EVD_SYNC_TIME;
-                    sprintf(cmd, "/usr/sbin/eventctl.exe add OK 0x%x 0x%x 0x%x 0x%x", NTP_SENSOR_TYPE, NTP_SENSOR_NUM, \
-                        event_dir_type, evd1);
-                    system(cmd);
-                }
-            }
-        } else {
-            if (!assert_ntp_failed) {
-                printf("Assert NTP sync failed\n");
-                event_dir_type = (EVENT_DIR_ASSERT << 7) | NTP_EVENT_TYPE;
-                evd1 = EVD_SYNC_TIME_FAIL;
-                sprintf(cmd, "/usr/sbin/eventctl.exe add Critical 0x%x 0x%x 0x%x 0x%x", NTP_SENSOR_TYPE, NTP_SENSOR_NUM, \
-                    event_dir_type, evd1);
-                system(cmd);
-
-                sprintf(cmd, "python /usr/sbin/bmclogevent_ctl.py  %d, %d", NTP_SENSOR_NUM, (EVENT_DIR_ASSERT << 7));
-                system(cmd);
-                assert_ntp_failed = 1;
-            }
-        }
-
         sleep(NTP_SYNC_PERIOD);
     }
 }
