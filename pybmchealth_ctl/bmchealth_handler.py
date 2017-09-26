@@ -2,20 +2,12 @@
 
 import os
 import sys
-import gobject
+import glib
 import subprocess
 import dbus
-import dbus.service
-import dbus.mainloop.glib
-import obmc.dbuslib.propertycacher as PropertyCacher
-from obmc.dbuslib.bindings import get_dbus, DbusProperties, DbusObjectManager
-from obmc.sensors import HwmonSensor as HwmonSensor
-from obmc.sensors import SensorThresholds as SensorThresholds
 import obmc_system_config as System
 import time
 import bmclogevent_ctl
-import httplib, urllib2, base64, ssl
-
 import mac_guid
 
 DBUS_NAME = 'org.openbmc.Sensors'
@@ -621,7 +613,7 @@ def save_pid():
 
 if __name__ == '__main__':
     save_pid()
-    mainloop = gobject.MainLoop()
+    mainloop = glib.MainLoop()
     #set bmchealth default value
     bmclogevent_ctl.bmclogevent_set_value(g_bmchealth_obj_path, 0)
     bmchealth_set_status_led(0)
@@ -631,17 +623,17 @@ if __name__ == '__main__':
     bmchealth_check_bmc_reset() # Before check fwu, after check watchdog
     bmchealth_check_fw_update_complete()
     bmchealth_check_boot_spi()
-    gobject.timeout_add(1000,bmchealth_check_network)
-    gobject.timeout_add(1000,bmchealth_check_fw_update_start)
-    gobject.timeout_add(1000,bmchealth_check_i2c, 5)
-    gobject.timeout_add(1000,bmchealth_check_status_led)
-    gobject.timeout_add(1000,bmchealth_check_log_rollover)
-    gobject.timeout_add(1000,bmchealth_check_memory_utilization)
-    gobject.timeout_add(20000,bmchealth_check_empty_invalid_fru)
-    gobject.timeout_add(1000,bmchealth_check_CPU_utilization)
-    gobject.timeout_add(1000,bmchealth_check_alignment_traps)
-    gobject.timeout_add(1000,bmchealth_check_ecc_errors)
-    gobject.timeout_add(10000,bmchealth_kick_watchdog)
+    glib.timeout_add_seconds(5,bmchealth_check_network)
+    glib.timeout_add_seconds(1,bmchealth_check_fw_update_start)
+    glib.timeout_add_seconds(5,bmchealth_check_i2c, 5)
+    glib.timeout_add_seconds(1,bmchealth_check_status_led)
+    glib.timeout_add_seconds(5,bmchealth_check_log_rollover)
+    glib.timeout_add_seconds(5,bmchealth_check_memory_utilization)
+    glib.timeout_add_seconds(20,bmchealth_check_empty_invalid_fru)
+    glib.timeout_add_seconds(5,bmchealth_check_CPU_utilization)
+    glib.timeout_add_seconds(5,bmchealth_check_alignment_traps)
+    glib.timeout_add_seconds(5,bmchealth_check_ecc_errors)
+    glib.timeout_add_seconds(10,bmchealth_kick_watchdog)
     print "bmchealth_handler control starting"
     mainloop.run()
 
