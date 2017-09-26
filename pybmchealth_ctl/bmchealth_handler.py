@@ -480,6 +480,18 @@ def bmchealth_check_empty_invalid_fru():
     if 'FRU_STR' not in System.ID_LOOKUP  or 'FRU_SLAVE' not in System.ID_LOOKUP:
         return False
 
+    check_fru_empty_item = [
+        'Chassis_Info_Area_Length',
+        'Board_Area_Length',
+        'Product_Area_Length',
+    ]
+
+    check_fru_invalid_item = [
+        'Chassis_CheckSum',
+        'Board_Area_Checksum',
+        'Product_Area_Checksum',
+    ]
+
     for fur_item in System.ID_LOOKUP['FRU_STR']:
         if fur_item in System.ID_LOOKUP['FRU_SLAVE']:
             i2c_bus = System.ID_LOOKUP['FRU_SLAVE'][fur_item]['I2C_BUS']
@@ -487,21 +499,33 @@ def bmchealth_check_empty_invalid_fru():
             fru_id = int(fur_item.split("_")[1])
 
             # read fru to check fru data is correct with 'ocs-fru' or 'phosphor-read-eeprom'
-            fru_chk_status = -1
-            for i in range(2):
-                if i == 0:
-                    fru_chk_cmd = ['ocs-fru', '-c', str(i2c_bus), '-s', hex(i2c_slave), '-r']
-                elif i == 1:
-                    fru_chk_cmd = ['phosphor-read-eeprom',
-                                     '--eeprom=/sys/bus/i2c/devices/%d-00%x/eeprom' % (i2c_bus, i2c_slave) ,
-                                     '--fruid=%x' % fru_id]
-                with open(os.devnull, 'w') as FNULL:
+            fru_chk_status = 0
+            fru_chk_len_status = -1
+            fru_chk_cmd = 'ocs-fru -c '+str(i2c_bus)+' -s '+ hex(i2c_slave)+' -r'
+            cmd_msg = subprocess.check_output(fru_chk_cmd, shell=True)
+            sp_cmd = cmd_msg.split("\n")
+            for cmd_line in sp_cmd:
+                sp_cmd_line = cmd_line.rstrip('\n').split(":")
+                if len(sp_cmd_line) == 2:
+                    #check if fru is invalid
+                    ocs_fru_item = sp_cmd_line[0]
+                    ocs_fru_val = sp_cmd_line[1]
                     try:
-                        fru_chk_status = subprocess.call(fru_chk_cmd, stdout=FNULL, stderr=subprocess.STDOUT)
+                        index = check_fru_invalid_item.index(ocs_fru_item)
+                        if ocs_fru_val == 'ERROR':
+                            fru_chk_status = -1
+                            break
                     except:
                         pass
-                if fru_chk_status == 0:
-                    break
+                    #check if fru is empty
+                    try:
+                        index = check_fru_empty_item.index(ocs_fru_item)
+                        if int(ocs_fru_val) > 0:
+                            fru_chk_len_status = 0
+                    except:
+                        pass
+            if fru_chk_len_status != 0:
+                fru_chk_status = -1
             if fur_item not in g_record_fru_status:
                 g_record_fru_status[fur_item]  = 0
             if fru_chk_status != 0 and g_record_fru_status[fur_item] == 0: #assert

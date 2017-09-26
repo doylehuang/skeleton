@@ -295,9 +295,13 @@ ID_LOOKUP = {
     },
     'FRU_STR' : {
         'BOARD_100'  : '<inventory_root>/system/chassis/io_board',
+        'PDB_100'  : '<inventory_root>/system/chassis/io_board',
+        'UBB_100'  : '<inventory_root>/system/chassis/io_board',
     },
     'FRU_SLAVE' : {
-        'BOARD_100'  : {'I2C_BUS':4 , 'I2C_SLAVE': 0x50}
+        'BOARD_100'  : {'I2C_BUS':4 , 'I2C_SLAVE': 0x50},
+        'PDB_100'  : {'I2C_BUS':0 , 'I2C_SLAVE': 0x50},
+        'UBB_100'  : {'I2C_BUS':3 , 'I2C_SLAVE': 0x50},
     },
     'SENSOR' : {
     },
