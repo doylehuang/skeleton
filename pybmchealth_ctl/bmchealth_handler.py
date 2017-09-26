@@ -586,7 +586,6 @@ if __name__ == '__main__':
     bmchealth_check_watchdog()
     bmchealth_check_bmc_reset() # Before check fwu, after check watchdog
     bmchealth_check_fw_update_complete()
-    bmchealth_check_boot_spi()
     glib.timeout_add_seconds(5,bmchealth_check_network)
     glib.timeout_add_seconds(1,bmchealth_check_fw_update_start)
     glib.timeout_add_seconds(5,bmchealth_check_i2c, 5)
