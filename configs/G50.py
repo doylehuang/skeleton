@@ -104,6 +104,12 @@ APPS = {
         'process_name'    : 'sensor_manager2.py',
         'args'            : [SYSTEM_NAME]
     },
+    'host_watchdog' : {
+        'system_state'    : 'BMC_STARTING',
+        'start_process'   : True,
+        'monitor_process' : True,
+        'process_name'    : 'host_watchdog.exe',
+    },
     'power_control' : {
         'system_state'    : 'BMC_STARTING',
         'start_process'   : True,
@@ -154,12 +160,6 @@ APPS = {
         'start_process'   : True,
         'monitor_process' : True,
         'process_name'    : 'control_bmc.exe',
-    },
-    'id_button' : {
-        'system_state'    : 'BMC_STARTING',
-        'start_process'   : True,
-        'monitor_process' : True,
-        'process_name'    : 'button_id.exe',
     },
     'cable_led' : {
         'system_state'    : 'BMC_STARTING',
