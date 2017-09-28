@@ -223,9 +223,7 @@ class Hwmons():
 				gpu_ready = gpu_intf.Get(HwmonSensor.IFACE_NAME,'ready')
 			except:
 				pass
-			if hwmon.has_key('mapping') and gpu_ready == 1:
-				hwmon['ready'] = 1
-			elif plx_ready == 1:
+			if plx_ready == 1 and gpu_ready == 1:
 				hwmon['ready'] = 1
 			else:
 				return True
