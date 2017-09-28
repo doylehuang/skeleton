@@ -363,6 +363,12 @@ class Hwmons():
 					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
 											"Asserted",  "SSH Invalid User", "SSH Invalid User")
 
+				idFilter = 'Failed password for invalid user sysadmin'
+				idPosition = fileString.find(idFilter)
+				if idPosition != -1:
+					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+											"Asserted",  "SSH Invalid User", "SSH Invalid User")
+
 				idFilter = 'Close session'
 				idPosition = fileString.find(idFilter)
 				if idPosition != -1:
