@@ -78,7 +78,7 @@ def bmchealth_pop_record_control_led(key_str):
     return len(record_control_led)
 
 def bmchealth_control_status_led(severity = Event.SEVERITY_CRIT, sensor_number = 0, event_dir = 0, evd1 = 0, evd2 = 0, evd3 = 0):
-    if severity !=  Event.SEVERITY_CRIT and event_dir = 0:
+    if severity !=  Event.SEVERITY_CRIT and event_dir == 0:
         return
 
     key_str = str(sensor_number)
