@@ -785,8 +785,6 @@ def _add_fpga2_sensor(configs, index, sensornumber, sensor_name, bus_number):
     objpath = '/org/openbmc/sensors/temperature/FPGA2_TMP'
     config = {
         'bus_number': bus_number,
-        'critical_upper':83,
-        'positive_hysteresis': 2,
         'device_node': 'temp2_input',
         'object_path' : 'sensors/temperature/FPGA2_TMP',
         'poll_interval' : 5000,
