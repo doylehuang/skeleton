@@ -475,8 +475,6 @@ static void check_change_closeloop_params(struct st_closeloop_obj_data *sensor_d
 	if (g_fan_para_shm == NULL)
 		return ;
 
-	if (g_fan_para_shm->flag_closeloop == 1)
-		return ; //do nothing
 
 	while (g_fan_para_shm->flag_closeloop == 3 && wait_times<MAX_WAIT_TIMEOUT)
 		wait_times++;
@@ -488,7 +486,6 @@ static void check_change_closeloop_params(struct st_closeloop_obj_data *sensor_d
 		sensor_data->Kd = g_fan_para_shm->closeloop_param[index].Kd;
 		sensor_data->sensor_tracking = g_fan_para_shm->closeloop_param[index].sensor_tracking;
 		sensor_data->warning_temp = g_fan_para_shm->closeloop_param[index].warning_temp;
-		g_fan_para_shm->flag_closeloop = 1;
 	}
 }
 
@@ -499,8 +496,6 @@ static void check_change_openloop_params()
 	if (g_fan_para_shm == NULL)
 		return ;
 
-	if (g_fan_para_shm->flag_openloop == 1)
-		return ; //do nothing
 
 	while (g_fan_para_shm->flag_openloop == 3 && wait_times<MAX_WAIT_TIMEOUT)
 		wait_times++;
@@ -513,7 +508,6 @@ static void check_change_openloop_params()
 		g_UpAmb = g_fan_para_shm->g_UpAmb;
 		g_LowSpeed = g_fan_para_shm->g_LowSpeed;
 		g_HighSpeed = g_fan_para_shm->g_HighSpeed;
-		g_fan_para_shm->flag_openloop = 1;
 	}
 }
 
@@ -639,7 +633,7 @@ static int fan_control_algorithm_monitor(void)
 			while (t_header != NULL) {
 				int t_reaing;
 				t_reaing = get_max_sensor_reading(bus, t_header);
-				g_fan_para_shm->openloop_sensor_reading =(double) t_reaing/1000;
+				g_fan_para_shm->openloop_sensor_reading =(double) t_reaing;
 				calculate_openloop(g_fan_para_shm->openloop_sensor_reading);
 				openloop_reading = (openloop_reading<t_reaing? t_reaing:openloop_reading);
 				t_header = t_header->next;
@@ -1105,7 +1099,7 @@ static void inital_fan_pid_shm()
 			g_fan_para_shm->closeloop_param[i].sample_n = SAMPLING_N;
 		}
 		g_fan_para_shm->closeloop_count = 0;
-		g_fan_para_shm->openloop_sensor_offset = -7;
+		g_fan_para_shm->openloop_sensor_offset = 0;
 		g_fan_para_shm->debug_msg_info_en = 0;
 	}
 }
