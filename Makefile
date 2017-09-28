@@ -39,7 +39,8 @@ SUBDIRS = hacks \
 	  pybmchealth_ctl \
 	  pybmclogevent_ctl \
 	  gpu_utility \
-	  eventctl
+	  eventctl \
+	  pyproperty_file_ctl
 
 REVERSE_SUBDIRS = $(shell echo $(SUBDIRS) $(GDBUS_APPS) $(SDBUS_APPS) | tr ' ' '\n' | tac |tr '\n' ' ')
 

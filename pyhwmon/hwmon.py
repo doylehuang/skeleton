@@ -21,6 +21,7 @@ import obmc_system_config as System
 import bmclogevent_ctl
 import traceback
 from time import sleep
+import property_file_ctl
 
 SENSOR_BUS = 'org.openbmc.Sensors'
 # sensors include /org/openbmc/sensors and /org/openbmc/control
@@ -397,7 +398,7 @@ class Hwmons():
 				attribute = hwmon_path
 				evd1 = 0xA0
 				if 'firmware_update' in hwmon:
-					firmware_update_status = intf.Get(HwmonSensor.IFACE_NAME,'firmware_update')
+					firmware_update_status = property_file_ctl.GetProperty(objpath, 'firmware_update')
 					if (firmware_update_status & (1 << (hwmon['index'] - 1))) > 0:
 						return True
 				if attribute:
@@ -503,7 +504,7 @@ class Hwmons():
 						continue
 
 				if 'firmware_update' in hwmon:
-					firmware_update_status = intf.Get(HwmonSensor.IFACE_NAME,'firmware_update')
+					firmware_update_status = property_file_ctl.GetProperty(objpath, 'firmware_update')
 					if (firmware_update_status & (1 << (hwmon['index'] - 1))) > 0:
 						continue
 
@@ -621,7 +622,7 @@ class Hwmons():
 					return True
 
 			if 'firmware_update' in hwmon:
-				if intf_p.Get(HwmonSensor.IFACE_NAME,'firmware_update') == 1:
+				if property_file_ctl.GetProperty(objpath, 'firmware_update') == 1:
 					return True
 
 			# skip get sensor readings while dc on/off in progress
@@ -829,7 +830,7 @@ class Hwmons():
 						for prop in hwmon.keys():
 							if (IFACE_MAPPING.has_key(prop)):
 								if prop == 'firmware_update':
-									intf.Set(IFACE_MAPPING[prop],prop,hwmon[prop])
+									property_file_ctl.SetProperty(objpath, prop, hwmon[prop])
 								else:
 									intf.Set(IFACE_MAPPING[prop],prop+'_'+str(hwmon['sensornumber']),hwmon[prop])
 						self.sensors[hwmon['sensornumber']]=True
