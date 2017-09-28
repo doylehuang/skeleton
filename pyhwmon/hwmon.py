@@ -702,7 +702,7 @@ class Hwmons():
 		logid = self.event_manager.create(log)
 
 		if logid != 0:
-			bmclogevent_ctl.bmchealth_control_status_led(serverity, sensor_number, event_dir, evd1)
+			bmclogevent_ctl.bmchealth_control_status_led(severity, sensor_number, event_dir, evd1)
 
 		return True
 
