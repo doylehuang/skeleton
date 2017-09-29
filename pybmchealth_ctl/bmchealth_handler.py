@@ -419,14 +419,13 @@ def bmchealth_check_memory_utilization():
             memory_used = memory_total - memory_free
             memory_usage = memory_used / memory_total
             memory_utilization = int(memory_usage*100)
-            memory_utilization_in_MB = int(memory_used/1000)
             if memory_utilization >= 80 and g_memory_utilization == 0:
                 print "Log Asserted memory utilization"
-                LogEventBmcHealthMessages("Asserted", "BMC Memory utilization","BMC Memory utilization",data={'memory_utilization':memory_utilization_in_MB})
+                LogEventBmcHealthMessages("Asserted", "BMC Memory utilization","BMC Memory utilization",data={'memory_utilization':memory_utilization})
                 g_memory_utilization = 1
             elif memory_utilization < 80 and g_memory_utilization == 1:
                 print "Log Deasserted memory utilization"
-                LogEventBmcHealthMessages("Deasserted", "BMC Memory utilization","BMC Memory utilization",data={'memory_utilization':memory_utilization_in_MB})
+                LogEventBmcHealthMessages("Deasserted", "BMC Memory utilization","BMC Memory utilization",data={'memory_utilization':memory_utilization})
                 g_memory_utilization = 0
                 time.sleep(60)
     except:
