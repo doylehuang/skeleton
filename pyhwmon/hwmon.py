@@ -490,117 +490,120 @@ class Hwmons():
 		except:
 			pass
 
-	def sensor_polling(self, objpath, hwmons):
-		self.kickWatchdog()
-		obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
-		intf = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
-		threshold_props = intf.GetAll(SensorThresholds.IFACE_NAME)
-		for hwmon in hwmons:
-			try:
-				standby_monitor = True
-				if hwmon.has_key('standby_monitor'):
-					standby_monitor = hwmon['standby_monitor']
-				# Skip monitor while DC power off if stand by monitor is False
-				if not standby_monitor:
-					current_pgood = 0
-					try:
-						with open('/sys/class/gpio/gpio390/value', 'r') as f:
-							current_pgood = int(f.readline()) ^ 1
-						self.check_system_event(current_pgood)
-						if  current_pgood == 0:
-							intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
+	def sensor_polling(self, sensor_list):
+		for sensor_set in sensor_list:
+			objpath = sensor_set[0]
+			hwmons = sensor_set[1]
+			self.kickWatchdog()
+			obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
+			intf = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
+			threshold_props = intf.GetAll(SensorThresholds.IFACE_NAME)
+			for hwmon in hwmons:
+				try:
+					standby_monitor = True
+					if hwmon.has_key('standby_monitor'):
+						standby_monitor = hwmon['standby_monitor']
+					# Skip monitor while DC power off if stand by monitor is False
+					if not standby_monitor:
+						current_pgood = 0
+						try:
+							with open('/sys/class/gpio/gpio390/value', 'r') as f:
+								current_pgood = int(f.readline()) ^ 1
+							self.check_system_event(current_pgood)
+							if  current_pgood == 0:
+								intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
+								continue
+						except (OSError, IOError):
+							print 'Get power good status failure'
+
+					if 'firmware_update' in hwmon:
+						firmware_update_status = property_file_ctl.GetProperty(objpath, 'firmware_update')
+						if (firmware_update_status & (1 << (hwmon['index'] - 1))) > 0:
 							continue
-					except (OSError, IOError):
-						print 'Get power good status failure'
 
-				if 'firmware_update' in hwmon:
-					firmware_update_status = property_file_ctl.GetProperty(objpath, 'firmware_update')
-					if (firmware_update_status & (1 << (hwmon['index'] - 1))) > 0:
-						continue
-
-				READING_VALUE = 'reading_value_'+str(hwmon['sensornumber'])
-				scale = hwmon['scale']
-				hwmon_path = None
-				if 'bus_number' in hwmon:
-					if hwmon['bus_number'] in self.path_mapping:
-						hwmon_path = self.path_mapping[hwmon['bus_number']] + hwmon['device_node']
-				if READING_VALUE in threshold_props and \
-						threshold_props[READING_VALUE] != -1:
-					raw_value = threshold_props[READING_VALUE]
-					scale = 1
-				else:
-					if hwmon_path:
-						raw_value = int(self.readAttribute(hwmon_path))
+					READING_VALUE = 'reading_value_'+str(hwmon['sensornumber'])
+					scale = hwmon['scale']
+					hwmon_path = None
+					if 'bus_number' in hwmon:
+						if hwmon['bus_number'] in self.path_mapping:
+							hwmon_path = self.path_mapping[hwmon['bus_number']] + hwmon['device_node']
+					if READING_VALUE in threshold_props and \
+							threshold_props[READING_VALUE] != -1:
+						raw_value = threshold_props[READING_VALUE]
+						scale = 1
 					else:
-						raw_value = int(self.readAttribute(hwmon['device_node']))
-
-				if raw_value == -1:
-					hwmon['reading_error_count']+=1
-					if hwmon['reading_error_count'] < 3:
-						continue
-					intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
-				else:
-					intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value / scale)
-				hwmon['reading_error_count'] = 0
-
-
-				if hwmon['sensornumber'] != '':
-					self.entity_presence_check(objpath,hwmon,raw_value)
-					self.subsystem_health_check(hwmon,raw_value)
-
-				# do not check threshold while not reading
-				if raw_value == -1:
-					continue
-				reading_value = raw_value / scale
-				origin_threshold_state = hwmon['threshold_state']
-				status_change = origin_threshold_state != self.check_thresholds(threshold_props, reading_value, hwmon)
-				if status_change:
-					hwmon['status_change_count']+=1
-					if hwmon['status_change_count'] < 3:
-						hwmon['threshold_state'] = origin_threshold_state
-						continue
-					hwmon['status_change_count'] = 0
-					intf.Set(SensorThresholds.IFACE_NAME, \
-							'threshold_state_'+str(hwmon['sensornumber']), hwmon['threshold_state'])
-					severity = Event.SEVERITY_INFO
-					event_type_code = 0x0
-
-					if hwmon['threshold_state'].find("CRITICAL") != -1 or origin_threshold_state.find("CRITICAL") != -1:
-						severity = Event.SEVERITY_CRIT
-						if hwmon['threshold_state'].find("LOWER") != -1 or origin_threshold_state.find("LOWER") != -1:
-							event_type_code = 0x02
-							evd3 = hwmon['critical_lower']
+						if hwmon_path:
+							raw_value = int(self.readAttribute(hwmon_path))
 						else:
-							event_type_code = 0x09
-							evd3 = hwmon['critical_upper']
-					elif hwmon['threshold_state'].find("WARNING") != -1 or origin_threshold_state.find("WARNING") != -1:
-						severity = Event.SEVERITY_WARN
-						if hwmon['threshold_state'].find("LOWER") != -1 or origin_threshold_state.find("LOWER") != -1:
-							event_type_code = 0x0
-							evd3 = hwmon['warning_lower']
-						else:
-							event_type_code = 0x07
-							evd3 = hwmon['warning_upper']
-					# [7:6] Trigger reading, [5:4] trigger threshold value, [3:0] Event/Reading code
-					evd1 = (0b0101 << 4)  | event_type_code
-					evd2 = reading_value
+							raw_value = int(self.readAttribute(hwmon['device_node']))
 
-					sdr = sdr_tool.SDRS.get_by_sensor_number(hwmon['sensornumber'])
-					evd2 = sdr.compress_raw_reading(evd2)
-					evd3 = sdr.compress_raw_reading(evd3)
-					if hwmon['threshold_state'] == 'NORMAL':
-						severity = Event.SEVERITY_OKAY
-						event_dir = 0x80
+					if raw_value == -1:
+						hwmon['reading_error_count']+=1
+						if hwmon['reading_error_count'] < 3:
+							continue
+						intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
 					else:
-						event_dir = 0x0
-					self.LogThresholdEventMessages(hwmon, severity, event_dir,
-											evd1, evd2, evd3)
-				else:
-					hwmon['status_change_count'] = 0
+						intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value / scale)
+					hwmon['reading_error_count'] = 0
 
-			except:
-				traceback.print_exc()
-				print "HWMON: Attibute no longer exists: "+hwmon['object_path']
+
+					if hwmon['sensornumber'] != '':
+						self.entity_presence_check(objpath,hwmon,raw_value)
+						self.subsystem_health_check(hwmon,raw_value)
+
+					# do not check threshold while not reading
+					if raw_value == -1:
+						continue
+					reading_value = raw_value / scale
+					origin_threshold_state = hwmon['threshold_state']
+					status_change = origin_threshold_state != self.check_thresholds(threshold_props, reading_value, hwmon)
+					if status_change:
+						hwmon['status_change_count']+=1
+						if hwmon['status_change_count'] < 3:
+							hwmon['threshold_state'] = origin_threshold_state
+							continue
+						hwmon['status_change_count'] = 0
+						intf.Set(SensorThresholds.IFACE_NAME, \
+								'threshold_state_'+str(hwmon['sensornumber']), hwmon['threshold_state'])
+						severity = Event.SEVERITY_INFO
+						event_type_code = 0x0
+
+						if hwmon['threshold_state'].find("CRITICAL") != -1 or origin_threshold_state.find("CRITICAL") != -1:
+							severity = Event.SEVERITY_CRIT
+							if hwmon['threshold_state'].find("LOWER") != -1 or origin_threshold_state.find("LOWER") != -1:
+								event_type_code = 0x02
+								evd3 = hwmon['critical_lower']
+							else:
+								event_type_code = 0x09
+								evd3 = hwmon['critical_upper']
+						elif hwmon['threshold_state'].find("WARNING") != -1 or origin_threshold_state.find("WARNING") != -1:
+							severity = Event.SEVERITY_WARN
+							if hwmon['threshold_state'].find("LOWER") != -1 or origin_threshold_state.find("LOWER") != -1:
+								event_type_code = 0x0
+								evd3 = hwmon['warning_lower']
+							else:
+								event_type_code = 0x07
+								evd3 = hwmon['warning_upper']
+						# [7:6] Trigger reading, [5:4] trigger threshold value, [3:0] Event/Reading code
+						evd1 = (0b0101 << 4)  | event_type_code
+						evd2 = reading_value
+
+						sdr = sdr_tool.SDRS.get_by_sensor_number(hwmon['sensornumber'])
+						evd2 = sdr.compress_raw_reading(evd2)
+						evd3 = sdr.compress_raw_reading(evd3)
+						if hwmon['threshold_state'] == 'NORMAL':
+							severity = Event.SEVERITY_OKAY
+							event_dir = 0x80
+						else:
+							event_dir = 0x0
+						self.LogThresholdEventMessages(hwmon, severity, event_dir,
+												evd1, evd2, evd3)
+					else:
+						hwmon['status_change_count'] = 0
+
+				except:
+					traceback.print_exc()
+					print "HWMON: Attibute no longer exists: "+hwmon['object_path']
 		sleep(0.4)
 		return True
 
@@ -804,6 +807,7 @@ class Hwmons():
 		if "HWMON_SENSOR_CONFIG" not in dir(System):
 			return
 
+		sensor_list = []
 		for objpath, hwmons in System.HWMON_SENSOR_CONFIG.iteritems():
 
 			last_sensor_number = None
@@ -861,8 +865,11 @@ class Hwmons():
 					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.check_pmbus_state,objpath, hwmons)
 				else:
 					if hwmon.has_key('poll_interval'):
-						glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.sensor_polling,objpath, hwmons)
+						sensor_list.append([objpath, hwmons])
 				self.sensors[objpath]=True
+		if (len(sensor_list)>0):
+			print sensor_list
+			glib.timeout_add_seconds(5,self.sensor_polling,sensor_list)
 
 	def checkPmbusHwmon(self, instance_name, dpath):
 		if instance_name == "8-0058":
