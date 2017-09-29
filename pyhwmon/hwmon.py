@@ -501,12 +501,17 @@ class Hwmons():
 				if hwmon.has_key('standby_monitor'):
 					standby_monitor = hwmon['standby_monitor']
 				# Skip monitor while DC power off if stand by monitor is False
-				current_pgood = self.pgood_intf.Get('org.openbmc.control.Power', 'pgood')
-				self.check_system_event(current_pgood)
 				if not standby_monitor:
-					if  current_pgood == 0:
-						intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
-						continue
+					current_pgood = 0
+					try:
+						with open('/sys/class/gpio/gpio390/value', 'r') as f:
+							current_pgood = int(f.readline()) ^ 1
+						self.check_system_event(current_pgood)
+						if  current_pgood == 0:
+							intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
+							continue
+					except (OSError, IOError):
+						print 'Get power good status failure'
 
 				if 'firmware_update' in hwmon:
 					firmware_update_status = property_file_ctl.GetProperty(objpath, 'firmware_update')
