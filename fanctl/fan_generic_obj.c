@@ -91,6 +91,7 @@ sys_pwm_write(EM_PWM_IDX pwm_idex, EM_PWM_NODE_CMD pwm_cmd, int write_value, cha
 	char sys_pwm_path[100];
 	char sys_cmd[100];
 	int rc;
+	FILE *fp;
 
 	if (write_value > PWM_MAX_UNIT)
 		write_value = PWM_MAX_UNIT;
@@ -98,8 +99,13 @@ sys_pwm_write(EM_PWM_IDX pwm_idex, EM_PWM_NODE_CMD pwm_cmd, int write_value, cha
 		write_value = 0;
 
 	rc = sprintf(sys_pwm_path, "%s%s%d%s", SYS_PWM_PATH, prefix, pwm_idex, g_pwm_cmd_map_sys_tab[pwm_cmd]);
-	sprintf(sys_cmd, "echo %d > %s", write_value, sys_pwm_path);
-	system(sys_cmd);
+	fp = fopen(sys_pwm_path,"w");
+	if(fp == NULL) {
+		fprintf(stderr,"Error:[%s] opening:[%s]\n",strerror(errno),sys_pwm_path);
+		return ;
+	}
+	fprintf(fp , "%d", write_value);
+	fclose(fp);
 }
 
 static int
