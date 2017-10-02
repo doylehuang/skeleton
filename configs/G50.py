@@ -1325,12 +1325,6 @@ BMC_LOGEVENT_CONFIG = {
 					'Redfish Reset':      [0xA8, 0x2, None],
 				},
 			},
-			'DRAM ECC errors': {
-				'Severity': 'Warning',
-				'Event Data Information': {
-					'DRAM ECC errors':	[0xA9, 0xFF, 0xFF],
-				},
-			},
 			'I2C bus hang': {
 				'Severity': 'Warning',
 				'Event Data Information': {

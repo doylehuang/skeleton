@@ -569,24 +569,6 @@ def bmchealth_check_boot_spi():
             print "[bmchealth_check_boot_spi]exception !!!"
     return True
 
-def bmchealth_check_ecc_errors():
-    check_ecc_error_command = "devmem 0x1e6e0050"
-
-    try:
-        ecc_status = subprocess.check_output(check_ecc_error_command, shell=True)
-        re_count = (  int(ecc_status, 16) >> 16) & 0xff
-        ue_count = (  int(ecc_status, 16) >> 12) & 0xf
-        if re_count+ue_count > 0:
-            print "Log DRAM ECC Errors"
-            LogEventBmcHealthMessages("Asserted", "DRAM ECC errors")
-            clear_ecc_counts_command = "devmem 0x1e6e0050 32 %d" % (int(ecc_status, 16) | (1<<31))
-            subprocess.check_output(clear_ecc_counts_command, shell=True)
-            reset_ecc_status_command = "devmem 0x1e6e0050 32 %d" % (int(ecc_status, 16))
-            subprocess.check_output(reset_ecc_status_command, shell=True)
-    except:
-            print "[bmchealth_check_ecc_errors]exception !!!"
-    return True
-
 def save_pid():
     pid = os.getpid()
     try:
@@ -614,7 +596,6 @@ if __name__ == '__main__':
     glib.timeout_add_seconds(20,bmchealth_check_empty_invalid_fru)
     glib.timeout_add_seconds(5,bmchealth_check_CPU_utilization)
     glib.timeout_add_seconds(5,bmchealth_check_alignment_traps)
-    glib.timeout_add_seconds(5,bmchealth_check_ecc_errors)
     glib.timeout_add_seconds(10,bmchealth_kick_watchdog)
     print "bmchealth_handler control starting"
     mainloop.run()
