@@ -160,9 +160,9 @@ def bmclogevent_set_value(obj_path, val, mask=0xFFFF, offset=-1):
 
 def BmcLogEventMessages(objpath = "", s_event_identify="", s_assert="", \
                                     s_event_indicator="", s_evd_desc="", data={}):
-    evd1 = 0
-    evd2 = 0
-    evd3 = 0
+    evd1 = 0xff
+    evd2 = 0xff
+    evd3 = 0xff
     serverity = Event.SEVERITY_INFO
     b_assert = 0
     event_type = 0
