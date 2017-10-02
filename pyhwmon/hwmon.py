@@ -340,49 +340,50 @@ class Hwmons():
 			severity = Event.SEVERITY_CRIT
 
 			patch = '/var/log/secure'
-			file = open(patch, 'r')
+			if os.path.exists(patch):
+				file = open(patch, 'r')
 
-			for line in file:
-				idPosition = -1
-				fileString = line
-				idFilter = 'Accepted password for admin'
-				idPosition = fileString.find(idFilter)
-				if idPosition != -1:
-					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-											"Asserted",  "SSH Activated", "SSH Activated")
+				for line in file:
+					idPosition = -1
+					fileString = line
+					idFilter = 'Accepted password for admin'
+					idPosition = fileString.find(idFilter)
+					if idPosition != -1:
+						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+												"Asserted",  "SSH Activated", "SSH Activated")
 
-				idFilter = 'Failed password for admin'
-				idPosition = fileString.find(idFilter)
-				if idPosition != -1:
-					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-											"Asserted",  "SSH Failed Password", "SSH Failed Password")
+					idFilter = 'Failed password for admin'
+					idPosition = fileString.find(idFilter)
+					if idPosition != -1:
+						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+												"Asserted",  "SSH Failed Password", "SSH Failed Password")
 
-				idFilter = 'Invalid user'
-				idPosition = fileString.find(idFilter)
-				if idPosition != -1:
-					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-											"Asserted",  "SSH Invalid User", "SSH Invalid User")
+					idFilter = 'Invalid user'
+					idPosition = fileString.find(idFilter)
+					if idPosition != -1:
+						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+												"Asserted",  "SSH Invalid User", "SSH Invalid User")
 
-				idFilter = 'Failed password for invalid user sysadmin'
-				idPosition = fileString.find(idFilter)
-				if idPosition != -1:
-					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-											"Asserted",  "SSH Invalid User", "SSH Invalid User")
+					idFilter = 'Failed password for invalid user sysadmin'
+					idPosition = fileString.find(idFilter)
+					if idPosition != -1:
+						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+												"Asserted",  "SSH Invalid User", "SSH Invalid User")
 
-				idFilter = 'Close session'
-				idPosition = fileString.find(idFilter)
-				if idPosition != -1:
-					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-											"Deasserted",  "SSH Closed Session By Command", "SSH Closed Session By Command")
+					idFilter = 'Close session'
+					idPosition = fileString.find(idFilter)
+					if idPosition != -1:
+						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+												"Asserted",  "SSH Closed Session By Command", "SSH Closed Session By Command")
 
-				idFilter = 'Timeout'
-				idPosition = fileString.find(idFilter)
-				if idPosition != -1:
-					bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-											"Deasserted",  "SSH Closed Session By Timeout", "SSH Closed Session By Timeout")
+					idFilter = 'Timeout'
+					idPosition = fileString.find(idFilter)
+					if idPosition != -1:
+						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+												"Asserted",  "SSH Closed Session By Timeout", "SSH Closed Session By Timeout")
 
-			file.close()
-			os.remove(patch)
+				file.close()
+				os.remove(patch)
 
 		except Exception as e:
 			print str(e)
