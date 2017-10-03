@@ -35,6 +35,7 @@ WATCHDOG_FILE_PATH = "/run/obmc/watch_hwmon"
 ## static define which interface each property is under
 ## need a better way that is not slow
 IFACE_LOOKUP = {
+	'value': SensorValue.IFACE_NAME,
 	'units' : SensorValue.IFACE_NAME,
 	'scale' : HwmonSensor.IFACE_NAME,
 	'offset' : HwmonSensor.IFACE_NAME,
@@ -208,6 +209,8 @@ class Hwmons():
 	def subsystem_health_check(self,hwmon,raw_value):
 		check_subsystem_health_obj_path = "/org/openbmc/sensors/management_subsystem_health"
 		if hwmon.has_key('mapping'):
+			if hwmon['mapping'] not in self.check_entity_mapping:
+				return False
 			if self.check_entity_mapping[hwmon['mapping']] == 1:
 				return True
 		if hwmon.has_key('ready') and hwmon['ready'] == 0:
@@ -328,11 +331,12 @@ class Hwmons():
 							bmclogevent_ctl.bmchealth_control_status_led(sensor_number = sensor_number, event_dir = 0x80)
 
 		except Exception as e:
+			traceback.print_exc()
 			print str(e)
 		sleep(0.4)
 		return True
 
-	def sesson_audit_check(self, objpath, attribute, hwmon):
+	def sesson_audit_check(self, objpath, hwmon):
 		session_audit_objpath = "/org/openbmc/sensors/session_audit"
 		try:
 			sensor_type = int(hwmon['sensor_type'], 0)
@@ -386,6 +390,7 @@ class Hwmons():
 				os.remove(patch)
 
 		except Exception as e:
+			traceback.print_exc()
 			print str(e)
 		sleep(0.4)
 		return True
@@ -465,6 +470,7 @@ class Hwmons():
 				self.psu_state[hwmon['sensornumber']] = raw_value
 
 			except Exception as e:
+				traceback.print_exc()
 				print str(e)
 		sleep(0.4)
 		return True
@@ -495,6 +501,17 @@ class Hwmons():
 			objpath = sensor_set[0]
 			hwmons = sensor_set[1]
 			self.kickWatchdog()
+			if objpath == '/org/openbmc/sensors/pmbus/pmbus/status':
+				self.check_pmbus_state(objpath, hwmons)
+				continue
+			elif objpath == '/org/openbmc/sensors/system_throttle':
+				self.throttle_state[objpath] = 0
+				hwmon_path = hwmons[0]['device_node']
+				self.check_throttle_state(objpath, hwmon_path, hwmons[0])
+				continue
+			elif objpath == '/org/openbmc/sensors/session_audit':
+				self.sesson_audit_check(objpath, hwmons[0])
+				continue
 			obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
 			intf = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
 			threshold_props = intf.GetAll(SensorThresholds.IFACE_NAME)
@@ -511,7 +528,10 @@ class Hwmons():
 								current_pgood = int(f.readline()) ^ 1
 							self.check_system_event(current_pgood)
 							if  current_pgood == 0:
-								intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
+								if 'sensornumber' in hwmon:
+									intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
+								else:
+									intf.Set(SensorValue.IFACE_NAME, 'value', -1)
 								continue
 						except (OSError, IOError):
 							print 'Get power good status failure'
@@ -520,8 +540,8 @@ class Hwmons():
 						firmware_update_status = property_file_ctl.GetProperty(objpath, 'firmware_update')
 						if (firmware_update_status & (1 << (hwmon['index'] - 1))) > 0:
 							continue
-
-					READING_VALUE = 'reading_value_'+str(hwmon['sensornumber'])
+					if 'sensornumber' in hwmon:
+						READING_VALUE = 'reading_value_'+str(hwmon['sensornumber'])
 					scale = hwmon['scale']
 					hwmon_path = None
 					if 'bus_number' in hwmon:
@@ -541,17 +561,23 @@ class Hwmons():
 						hwmon['reading_error_count']+=1
 						if hwmon['reading_error_count'] < 3:
 							continue
-						intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
+						if 'sensornumber' in hwmon:
+							intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
+						else:
+							intf.Set(SensorValue.IFACE_NAME, 'value', -1)
 					else:
-						intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value / scale)
+						if 'sensornumber' in hwmon:
+							intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value / scale)
+						else:
+							intf.Set(SensorValue.IFACE_NAME, 'value', raw_value / scale)
 					hwmon['reading_error_count'] = 0
 
-
-					if hwmon['sensornumber'] != '':
-						self.entity_presence_check(objpath,hwmon,raw_value)
-						self.subsystem_health_check(hwmon,raw_value)
+					self.entity_presence_check(objpath,hwmon,raw_value)
+					self.subsystem_health_check(hwmon,raw_value)
 
 					# do not check threshold while not reading
+					if 'sensornumber' not in hwmon:
+						continue
 					if raw_value == -1:
 						continue
 					reading_value = raw_value / scale
@@ -630,10 +656,6 @@ class Hwmons():
 				if property_file_ctl.GetProperty(objpath, 'firmware_update') == 1:
 					return True
 
-			# skip get sensor readings while dc on/off in progress
-			dc_on_off = self.pgood_intf.Get('org.openbmc.control.Power', 'dc_on_off')
-			if dc_on_off == 1:
-				return True
 			raw_value = int(self.readAttribute(attribute))
 			rtn = intf.setByPoll(raw_value)
 			if (rtn[0] == True):
@@ -650,10 +672,6 @@ class Hwmons():
 				severity = Event.SEVERITY_INFO
 				event_type_code = 0x0
 				origin_threshold_type = self.threshold_state[objpath]
-				dc_on_off = self.pgood_intf.Get('org.openbmc.control.Power', 'dc_on_off')
-				if dc_on_off == 1:
-					intf_p.Set(SensorThresholds.IFACE_NAME, 'threshold_state', 'NORMAL')
-					return True
 				self.threshold_state[objpath]  = threshold_state
 
 				if threshold_state.find("CRITICAL") != -1 or origin_threshold_type.find("CRITICAL") != -1:
@@ -798,7 +816,7 @@ class Hwmons():
 					self.throttle_state[objpath] = 0
 					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.check_throttle_state,objpath, hwmon_path, hwmon)
 				elif 'sensornumber' in hwmon and hwmon['sensornumber'] == 0x8C:
-					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.sesson_audit_check,objpath, hwmon_path, hwmon)
+					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.sesson_audit_check,objpath, hwmon)
 				else:
 					if hwmon.has_key('poll_interval'):
 						glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.poll,objpath,hwmon_path,hwmon)
@@ -832,40 +850,43 @@ class Hwmons():
 
 					obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
 					intf = dbus.Interface(obj,dbus.PROPERTIES_IFACE)
-					if (self.sensors.has_key(hwmon['sensornumber']) == False):
+					if ('reading_type' in hwmon and hwmon['reading_type'] == 0x01) \
+						or ('sensornumber' in hwmon and hwmon['sensornumber'] >= 0x83 and hwmon['sensornumber'] <= 0x88):
+						if (self.sensors.has_key(hwmon['sensornumber']) == False):
+							for prop in hwmon.keys():
+								if (IFACE_MAPPING.has_key(prop)):
+									if prop == 'firmware_update':
+										property_file_ctl.SetProperty(objpath, prop, hwmon[prop])
+									else:
+										intf.Set(IFACE_MAPPING[prop],prop+'_'+str(hwmon['sensornumber']),hwmon[prop])
+							self.sensors[hwmon['sensornumber']]=True
+						# init threshold state
+						intf.Set(IFACE_MAPPING['threshold_state'],'threshold_state_'+str(hwmon['sensornumber']),"NORMAL")
+
+						if 'critical_upper' not in hwmon:
+							hwmon['critical_upper'] = None
+						if 'critical_lower' not in hwmon:
+							hwmon['critical_lower'] = None
+						if 'warning_upper' not in hwmon:
+							hwmon['warning_upper'] = None
+						if 'warning_lower' not in hwmon:
+							hwmon['warning_lower'] = None
+						if 'positive_hysteresis' not in hwmon:
+							hwmon['positive_hysteresis'] = -1
+						if 'negative_hysteresis' not in hwmon:
+							hwmon['negative_hysteresis'] = -1
+						hwmon['worst_threshold_state'] = "NORMAL"
+						hwmon['threshold_state'] = "NORMAL"
+						last_sensor_number = hwmon['sensornumber']
+						if hwmon['sensornumber'] >= 0x83 and hwmon['sensornumber'] <= 0x88:
+							self.psu_state[hwmon['sensornumber']] = 0x0
+					else:
 						for prop in hwmon.keys():
-							if (IFACE_MAPPING.has_key(prop)):
-								if prop == 'firmware_update':
-									property_file_ctl.SetProperty(objpath, prop, hwmon[prop])
-								else:
-									intf.Set(IFACE_MAPPING[prop],prop+'_'+str(hwmon['sensornumber']),hwmon[prop])
-						self.sensors[hwmon['sensornumber']]=True
-					# init threshold state
-					intf.Set(IFACE_MAPPING['threshold_state'],'threshold_state_'+str(hwmon['sensornumber']),"NORMAL")
+							if (IFACE_LOOKUP.has_key(prop)):
+								intf.Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
 
-					if 'critical_upper' not in hwmon:
-						hwmon['critical_upper'] = None
-					if 'critical_lower' not in hwmon:
-						hwmon['critical_lower'] = None
-					if 'warning_upper' not in hwmon:
-						hwmon['warning_upper'] = None
-					if 'warning_lower' not in hwmon:
-						hwmon['warning_lower'] = None
-					if 'positive_hysteresis' not in hwmon:
-						hwmon['positive_hysteresis'] = -1
-					if 'negative_hysteresis' not in hwmon:
-						hwmon['negative_hysteresis'] = -1
-					hwmon['worst_threshold_state'] = "NORMAL"
-					hwmon['threshold_state'] = "NORMAL"
-					last_sensor_number = hwmon['sensornumber']
-					if hwmon['sensornumber'] >= 0x83 and hwmon['sensornumber'] <= 0x88:
-						self.psu_state[hwmon['sensornumber']] = 0x0
-
-				if last_sensor_number >= 0x83 and last_sensor_number <= 0x88:
-					glib.timeout_add_seconds(hwmon['poll_interval']/1000,self.check_pmbus_state,objpath, hwmons)
-				else:
-					if hwmon.has_key('poll_interval'):
-						sensor_list.append([objpath, hwmons])
+				if hwmon.has_key('poll_interval'):
+					sensor_list.append([objpath, hwmons])
 				self.sensors[objpath]=True
 		if (len(sensor_list)>0):
 			print sensor_list

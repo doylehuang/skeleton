@@ -837,7 +837,8 @@ def _add_management_subsystem_health(configs, sensornumber):
     configs.append(config)
 
 def _add_pcie_slot(configs, index, gpio):
-    config = ['/org/openbmc/control/pcie/slot%d' % index, {
+    objpath = '/org/openbmc/control/pcie/slot%d' % index
+    config = {
         'device_node': '/sys/class/gpio/gpio%d/value' % gpio,
         'object_path': 'control/pcie/slot%d' % index,
         'poll_interval': 10000,
@@ -847,11 +848,16 @@ def _add_pcie_slot(configs, index, gpio):
         'entity': 0xB,
         'index': index,
         'inverse': 1,
-        }]
-    configs.append(config)
+        }
+    if objpath in configs:
+        configs[objpath].append(config)
+    else:
+        configs[objpath] = []
+        configs[objpath].append(config)
 
 def _add_gpu_slot(configs, index, gpio):
-    config = ['/org/openbmc/control/gpu/slot%d' % index, {
+    objpath = '/org/openbmc/control/gpu/slot%d' % index
+    config = {
         'device_node': '/sys/class/gpio/gpio%d/value' % gpio,
         'object_path': 'control/gpu/slot%d' % index,
         'poll_interval': 10000,
@@ -861,11 +867,16 @@ def _add_gpu_slot(configs, index, gpio):
         'entity': 0x3,
         'index': index,
         'inverse': 1,
-        }]
-    configs.append(config)
+        }
+    if objpath in configs:
+        configs[objpath].append(config)
+    else:
+        configs[objpath] = []
+        configs[objpath].append(config)
 
 def _add_sys_throttle_gpio(configs, sensornumber, gpio, extra_gpio):
-    config = ['/org/openbmc/sensors/system_throttle', {
+    objpath = '/org/openbmc/sensors/system_throttle'
+    config = {
         'device_node': '/sys/class/gpio/gpio%d/value' % gpio,
         'object_path': 'sensors/system_throttle',
         'poll_interval': 1000,
@@ -879,11 +890,16 @@ def _add_sys_throttle_gpio(configs, sensornumber, gpio, extra_gpio):
         'value': 0,
         'inverse': 1,
         'extra_data':'/sys/class/gpio/gpio%d/value' % extra_gpio,
-        }]
-    configs.append(config)
+        }
+    if objpath in configs:
+        configs[objpath].append(config)
+    else:
+        configs[objpath] = []
+        configs[objpath].append(config)
 
 def _add_session_audit(configs, sensornumber):
-    config = ['/org/openbmc/sensors/session_audit', {
+    objpath = '/org/openbmc/sensors/session_audit'
+    config = {
         'device_node': '',
         'object_path': 'sensors/session_audit',
         'poll_interval': 5000,
@@ -894,11 +910,16 @@ def _add_session_audit(configs, sensornumber):
         'standby_monitor': True,
         'units': '',
         'value': 0,
-        }]
-    configs.append(config)
+        }
+    if objpath in configs:
+        configs[objpath].append(config)
+    else:
+        configs[objpath] = []
+        configs[objpath].append(config)
 
 def _add_system_event(configs, sensornumber):
-    config = ['/org/openbmc/sensors/system_event', {
+    objpath = '/org/openbmc/sensors/system_event'
+    config = {
         'device_node': '',
         'object_path': 'sensors/system_event',
         'reading_type': 0x72,
@@ -907,8 +928,12 @@ def _add_system_event(configs, sensornumber):
         'sensornumber': sensornumber,
         'standby_monitor': True,
         'value': 0,
-        }]
-    configs.append(config)
+        }
+    if objpath in configs:
+        configs[objpath].append(config)
+    else:
+        configs[objpath] = []
+        configs[objpath].append(config)
 
 HWMON_SENSOR_CONFIG = {}
 SENSOR_MONITOR_CONFIG = []
@@ -1000,21 +1025,21 @@ _add_ntp_status_sensor(SENSOR_MONITOR_CONFIG, 0x81)
 _add_bmc_health_sensor(SENSOR_MONITOR_CONFIG, 0x82)
 _add_entity_presence(SENSOR_MONITOR_CONFIG, 0x8A)
 _add_management_subsystem_health(SENSOR_MONITOR_CONFIG, 0x89)
-_add_pcie_slot(SENSOR_MONITOR_CONFIG, 1, 252)
-_add_pcie_slot(SENSOR_MONITOR_CONFIG, 2, 253)
-_add_pcie_slot(SENSOR_MONITOR_CONFIG, 3, 254)
-_add_pcie_slot(SENSOR_MONITOR_CONFIG, 4, 255)
-_add_gpu_slot(SENSOR_MONITOR_CONFIG, 1, 236)
-_add_gpu_slot(SENSOR_MONITOR_CONFIG, 2, 237)
-_add_gpu_slot(SENSOR_MONITOR_CONFIG, 3, 238)
-_add_gpu_slot(SENSOR_MONITOR_CONFIG, 4, 239)
-_add_gpu_slot(SENSOR_MONITOR_CONFIG, 5, 240)
-_add_gpu_slot(SENSOR_MONITOR_CONFIG, 6, 241)
-_add_gpu_slot(SENSOR_MONITOR_CONFIG, 7, 242)
-_add_gpu_slot(SENSOR_MONITOR_CONFIG, 8, 243)
-_add_sys_throttle_gpio(SENSOR_MONITOR_CONFIG, 0x8B, 388, 389)
-_add_session_audit(SENSOR_MONITOR_CONFIG, 0x8C)
-_add_system_event(SENSOR_MONITOR_CONFIG, 0x8D)
+_add_pcie_slot(HWMON_SENSOR_CONFIG, 1, 252)
+_add_pcie_slot(HWMON_SENSOR_CONFIG, 2, 253)
+_add_pcie_slot(HWMON_SENSOR_CONFIG, 3, 254)
+_add_pcie_slot(HWMON_SENSOR_CONFIG, 4, 255)
+_add_gpu_slot(HWMON_SENSOR_CONFIG, 1, 236)
+_add_gpu_slot(HWMON_SENSOR_CONFIG, 2, 237)
+_add_gpu_slot(HWMON_SENSOR_CONFIG, 3, 238)
+_add_gpu_slot(HWMON_SENSOR_CONFIG, 4, 239)
+_add_gpu_slot(HWMON_SENSOR_CONFIG, 5, 240)
+_add_gpu_slot(HWMON_SENSOR_CONFIG, 6, 241)
+_add_gpu_slot(HWMON_SENSOR_CONFIG, 7, 242)
+_add_gpu_slot(HWMON_SENSOR_CONFIG, 8, 243)
+_add_sys_throttle_gpio(HWMON_SENSOR_CONFIG, 0x8B, 388, 389)
+_add_session_audit(HWMON_SENSOR_CONFIG, 0x8C)
+_add_system_event(HWMON_SENSOR_CONFIG, 0x8D)
 _add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 1, 0x62)
 _add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 2, 0x63)
 _add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 3, 0x64)
@@ -1027,23 +1052,6 @@ _add_gpu_mem_temperature_sensor(HWMON_SENSOR_CONFIG, 8, 0x69)
 
 
 HWMON_CONFIG = {
-    '21-004b' :  {
-        'names' : {
-            'temp1_input' : {
-                'object_path' : 'sensors/temperature/TMP4',
-                'poll_interval' : 5000,
-                'scale' : 1, #for thermal request, need to accurate decimal point for fan algorithm
-                'units' : 'C',
-                'sensor_type' : '0x01',
-                'sensornumber' : '',
-                'sensor_name':'',
-                'reading_type' : 0x01,
-                'emergency_enabled' : True,
-                'offset':-7,
-                'standby_monitor': False,
-                }, #Thermal team suggest temp4 (-7) offset
-        }
-    },
 }
 
 # Miscellaneous non-poll sensor with system specific properties.
