@@ -564,13 +564,13 @@ def _add_cable_led(configs, index, gpio):
     config = ['/org/openbmc/control/cable_led/led%d' % index, {
         'device_node': '/sys/class/gpio/gpio%d/value' % gpio,
         'object_path': 'control/cable_led/led%d' % index,
-        'poll_interval': 10000,
         'scale': 1,
         'standby_monitor': True,
         'units': '',
         'entity': 0x1F,
         'index': index+1,
         'inverse': 0,
+        'monitor_entity': 0,
         }]
     configs.append(config)
 
@@ -841,13 +841,13 @@ def _add_pcie_slot(configs, index, gpio):
     config = {
         'device_node': '/sys/class/gpio/gpio%d/value' % gpio,
         'object_path': 'control/pcie/slot%d' % index,
-        'poll_interval': 10000,
         'scale': 1,
         'standby_monitor': True,
         'units': '',
         'entity': 0xB,
         'index': index,
         'inverse': 1,
+        'monitor_entity': 0,
         }
     if objpath in configs:
         configs[objpath].append(config)
@@ -860,13 +860,13 @@ def _add_gpu_slot(configs, index, gpio):
     config = {
         'device_node': '/sys/class/gpio/gpio%d/value' % gpio,
         'object_path': 'control/gpu/slot%d' % index,
-        'poll_interval': 10000,
         'scale': 1,
         'standby_monitor': True,
         'units': '',
         'entity': 0x3,
         'index': index,
         'inverse': 1,
+        'monitor_entity': 0,
         }
     if objpath in configs:
         configs[objpath].append(config)

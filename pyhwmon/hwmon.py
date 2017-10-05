@@ -422,7 +422,6 @@ class Hwmons():
 					if hwmon['reading_error_count'] < 3:
 						continue
 				hwmon['reading_error_count'] = 0
-				self.entity_presence_check(objpath,hwmon,raw_value)
 				self.subsystem_health_check(hwmon,raw_value)
 				intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value)
 				if raw_value == -1:
@@ -572,7 +571,6 @@ class Hwmons():
 							intf.Set(SensorValue.IFACE_NAME, 'value', raw_value / scale)
 					hwmon['reading_error_count'] = 0
 
-					self.entity_presence_check(objpath,hwmon,raw_value)
 					self.subsystem_health_check(hwmon,raw_value)
 
 					# do not check threshold while not reading
@@ -660,9 +658,6 @@ class Hwmons():
 			rtn = intf.setByPoll(raw_value)
 			if (rtn[0] == True):
 				self.writeAttribute(attribute,rtn[1])
-
-			self.entity_presence_check(objpath,hwmon,raw_value)
-			self.subsystem_health_check(hwmon,raw_value)
 
 			# do not check threshold while not reading
 			if raw_value == -1:
@@ -826,6 +821,7 @@ class Hwmons():
 			return
 
 		sensor_list = []
+		entity_list = {}
 		for objpath, hwmons in System.HWMON_SENSOR_CONFIG.iteritems():
 
 			last_sensor_number = None
@@ -884,13 +880,21 @@ class Hwmons():
 						for prop in hwmon.keys():
 							if (IFACE_LOOKUP.has_key(prop)):
 								intf.Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
-
+					## Monitor Entity Presence only once when AC on
+					if hwmon.has_key('monitor_entity'):
+						if hwmon['monitor_entity'] == 0:
+							raw_value = int(self.readAttribute(hwmon['device_node']))
+							hwmon['monitor_entity'] = 1
+							entity_list[objpath] = [hwmon, raw_value]
 				if hwmon.has_key('poll_interval'):
 					sensor_list.append([objpath, hwmons])
 				self.sensors[objpath]=True
 		if (len(sensor_list)>0):
 			print sensor_list
 			glib.timeout_add_seconds(5,self.sensor_polling,sensor_list)
+		if len(entity_list) > 0:
+			for objectpath in entity_list.keys():
+				self.entity_presence_check(objectpath , entity_list[objectpath][0], entity_list[objectpath][1])
 
 	def checkPmbusHwmon(self, instance_name, dpath):
 		if instance_name == "8-0058":
