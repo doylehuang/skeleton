@@ -31,7 +31,7 @@ DIR_POLL_INTERVAL = 30
 HWMON_PATH = '/sys/class/hwmon'
 KICK_WATCHDOG_INTERVAL = 10
 WATCHDOG_FILE_PATH = "/run/obmc/watch_hwmon"
-
+pre_pgood = 1
 ## static define which interface each property is under
 ## need a better way that is not slow
 IFACE_LOOKUP = {
@@ -206,8 +206,10 @@ class Hwmons():
 				self.check_entity_presence[objpath] = 1
 		return True
 
-	def subsystem_health_check(self,hwmon,raw_value):
+	def subsystem_health_check(self,hwmon,raw_value,delay):
 		check_subsystem_health_obj_path = "/org/openbmc/sensors/management_subsystem_health"
+		if delay == True:
+			sleep(2)
 		if hwmon.has_key('mapping'):
 			if hwmon['mapping'] not in self.check_entity_mapping:
 				return False
@@ -422,7 +424,7 @@ class Hwmons():
 					if hwmon['reading_error_count'] < 3:
 						continue
 				hwmon['reading_error_count'] = 0
-				self.subsystem_health_check(hwmon,raw_value)
+				self.subsystem_health_check(hwmon,raw_value,delay=False)
 				intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value)
 				if raw_value == -1:
 					continue
@@ -496,6 +498,7 @@ class Hwmons():
 			pass
 
 	def sensor_polling(self, sensor_list):
+		global pre_pgood
 		for sensor_set in sensor_list:
 			objpath = sensor_set[0]
 			hwmons = sensor_set[1]
@@ -527,6 +530,7 @@ class Hwmons():
 								current_pgood = int(f.readline()) ^ 1
 							self.check_system_event(current_pgood)
 							if  current_pgood == 0:
+								pre_pgood = 0
 								if 'sensornumber' in hwmon:
 									intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
 								else:
@@ -571,7 +575,12 @@ class Hwmons():
 							intf.Set(SensorValue.IFACE_NAME, 'value', raw_value / scale)
 					hwmon['reading_error_count'] = 0
 
-					self.subsystem_health_check(hwmon,raw_value)
+					if pre_pgood == 0 and current_pgood == 1:
+						pre_pgood = current_pgood
+						delay = True
+					else:
+						delay = False
+					self.subsystem_health_check(hwmon,raw_value,delay)
 
 					# do not check threshold while not reading
 					if 'sensornumber' not in hwmon:

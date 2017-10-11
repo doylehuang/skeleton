@@ -31,7 +31,6 @@
 #define MAX_GPU_NUM (8)
 #define MAX_INFO_INDEX 16
 #define MAX_INFO_LENGTH 64
-#define PMBUS_DELAY usleep(400*1000)
 
 enum {
 	EM_GPU_DEVICE_1 = 0,
@@ -117,38 +116,31 @@ static int internal_gpu_access(int bus, __u8 slave,__u8 *write_buf, __u8 *read_b
 		fprintf(stderr, "Failed to do iotcl I2C_SLAVE\n");
 		goto error_smbus_access;
 	}
-	PMBUS_DELAY;
 	if(i2c_smbus_write_block_data(fd, MBT_REG_CMD, 4, write_buf) < 0) {
 		rc = -2;
 		goto error_smbus_access;
 	}
-	PMBUS_DELAY;
 	while(retry_gpu) {
 
 		if (i2c_smbus_read_block_data(fd, MBT_REG_CMD, cmd_reg) != 4) {
 			printf("Error: on bus %d reading from 0x5c",bus);
 			goto error_smbus_access;
 		}
-		PMBUS_DELAY;
 		if(cmd_reg[3] == GPU_ACCESS_SUCCESS_RETURN) {
 			if (i2c_smbus_read_block_data(fd, MBT_REG_DATA_KEPLER, read_buf) == 4) { /*success get data*/
 				close(fd);
-				PMBUS_DELAY;
 				return 0;
 			}
 		} else {
 			if (flag == 1) {
 				close(fd);
-				PMBUS_DELAY;
 				return -2;
 			} else
 				printf("read bus %d return 0x%x 0x%x 0x%x 0x%x, not in success state\n",bus,cmd_reg[0], cmd_reg[1], cmd_reg[2], cmd_reg[3]);
 		}
 		retry_gpu--;
-		PMBUS_DELAY;
 	}
 error_smbus_access:
-	PMBUS_DELAY;
 	close(fd);
 	return (rc!=0? -1: 0);
 }
@@ -362,8 +354,8 @@ void gpu_data_scan()
 	while(1) {
 		for(i=0; i<MAX_GPU_NUM; i++) {
 			function_get_gpu_data(i);
-			sleep(1);
 		}
+		usleep(400*1000);
 		notify_device_ready("/org/openbmc/sensors/gpu/gpu_temp");
 	}
 }
