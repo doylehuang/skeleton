@@ -503,20 +503,24 @@ class Hwmons():
 			objpath = sensor_set[0]
 			hwmons = sensor_set[1]
 			self.kickWatchdog()
-			if objpath == '/org/openbmc/sensors/pmbus/pmbus/status':
-				self.check_pmbus_state(objpath, hwmons)
+			try:
+				if objpath == '/org/openbmc/sensors/pmbus/pmbus/status':
+					self.check_pmbus_state(objpath, hwmons)
+					continue
+				elif objpath == '/org/openbmc/sensors/system_throttle':
+					self.throttle_state[objpath] = 0
+					hwmon_path = hwmons[0]['device_node']
+					self.check_throttle_state(objpath, hwmon_path, hwmons[0])
+					continue
+				elif objpath == '/org/openbmc/sensors/session_audit':
+					self.sesson_audit_check(objpath, hwmons[0])
+					continue
+				obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
+				intf = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
+				threshold_props = intf.GetAll(SensorThresholds.IFACE_NAME)
+			except:
+				#skip this sensor set
 				continue
-			elif objpath == '/org/openbmc/sensors/system_throttle':
-				self.throttle_state[objpath] = 0
-				hwmon_path = hwmons[0]['device_node']
-				self.check_throttle_state(objpath, hwmon_path, hwmons[0])
-				continue
-			elif objpath == '/org/openbmc/sensors/session_audit':
-				self.sesson_audit_check(objpath, hwmons[0])
-				continue
-			obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
-			intf = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
-			threshold_props = intf.GetAll(SensorThresholds.IFACE_NAME)
 			for hwmon in hwmons:
 				try:
 					standby_monitor = True
@@ -636,7 +640,6 @@ class Hwmons():
 
 				except:
 					traceback.print_exc()
-					print "HWMON: Attibute no longer exists: "+hwmon['object_path']
 		sleep(0.4)
 		return True
 
