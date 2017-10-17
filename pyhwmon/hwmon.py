@@ -898,6 +898,10 @@ class Hwmons():
 							raw_value = int(self.readAttribute(hwmon['device_node']))
 							hwmon['monitor_entity'] = 1
 							entity_list[objpath] = [hwmon, raw_value]
+							if raw_value == 0:
+								intf.Set(SensorValue.IFACE_NAME, 'value', 1)
+							elif raw_value == 1:
+								intf.Set(SensorValue.IFACE_NAME, 'value', 0)
 				if hwmon.has_key('poll_interval'):
 					sensor_list.append([objpath, hwmons])
 				self.sensors[objpath]=True
