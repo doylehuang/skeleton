@@ -265,14 +265,16 @@ class Hwmons():
 			subprocess.check_output(delete_command, shell=True)
 			read_Model_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x9a -r 32 | tail -n 1 >> "+str(psu_info_path)
 			subprocess.check_output(read_Model_command, shell=True)
-			read_srial_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x9e -r 32 | tail -n 1 >> "+str(psu_info_path)
+			read_srial_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x9e -r 16 | tail -n 1 >> "+str(psu_info_path)
 			subprocess.check_output(read_srial_command, shell=True)
 			read_manufacturer_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x99 -r 32 | tail -n 1 >> "+str(psu_info_path)
 			subprocess.check_output(read_manufacturer_command, shell=True)
-			read_firmware_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x9b -r 32 | tail -n 1 >> "+str(psu_info_path)
+			read_firmware_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0xd5 -r 9 | tail -n 1 >> "+str(psu_info_path)
 			subprocess.check_output(read_firmware_command, shell=True)
 			read_PN_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x9c -r 32 | tail -n 1 >> "+str(psu_info_path)
 			subprocess.check_output(read_PN_command, shell=True)
+			read_POUT_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0xa7 -r 3 | tail -n 1 >> "+str(psu_info_path)
+			subprocess.check_output(read_POUT_command, shell=True)
 		except Exception as e:
 			print str(e)
 		return True

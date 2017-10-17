@@ -96,16 +96,19 @@ void read_psu_info(int bus_no)
     sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x9a -r 32 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
     system(buff_path);
     /*read serial_number*/
-    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x9e -r 32 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
+    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x9e -r 16 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
     system(buff_path);
     /*read manufacturer_name*/
     sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x99 -r 32 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
     system(buff_path);
     /*read firmware_version*/
-    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x9b -r 32 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
+    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0xd5 -r 9 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
     system(buff_path);
     /*read part number*/
     sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x9c -r 32 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
+    system(buff_path);
+    /*read POUT MAX*/
+    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0xa7 -r 3 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
     system(buff_path);
 }
 
