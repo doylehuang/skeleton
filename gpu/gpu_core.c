@@ -135,8 +135,7 @@ static int internal_gpu_access(int bus, __u8 slave,__u8 *write_buf, __u8 *read_b
 			if (flag == 1) {
 				close(fd);
 				return -2;
-			} else
-				printf("read bus %d return 0x%x 0x%x 0x%x 0x%x, not in success state\n",bus,cmd_reg[0], cmd_reg[1], cmd_reg[2], cmd_reg[3]);
+			}
 		}
 		retry_gpu--;
 	}
@@ -184,7 +183,6 @@ static int function_get_gpu_info(int index)
 		memroy_index = input_cmd_data[i][0];
 
 		sprintf(&G_gpu_data[gpu_device_bus[index].device_index].info_data[memroy_index][0],"%s\0",&temp_readbuf[i][0]);
-		printf("Success get the gpu info =%s \r\n",G_gpu_data[gpu_device_bus[index].device_index].info_data[memroy_index]);
 	}
 	G_gpu_data[gpu_device_bus[index].device_index].info_ready = 1;
 	return 0;
@@ -355,7 +353,7 @@ void gpu_data_scan()
 		for(i=0; i<MAX_GPU_NUM; i++) {
 			function_get_gpu_data(i);
 		}
-		usleep(400*1000);
+		sleep(1);
 		notify_device_ready("/org/openbmc/sensors/gpu/gpu_temp");
 	}
 }
