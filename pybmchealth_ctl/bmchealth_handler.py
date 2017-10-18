@@ -9,6 +9,13 @@ import obmc_system_config as System
 import time
 import bmclogevent_ctl
 import mac_guid
+import conque_sole_shared_memory as ShareMemory
+
+g_share_table = {}
+g_share_table['/Network_DHCP_Status'] = ShareMemory.ConqueSoleSharedMemory()
+g_share_table['/Network_Link_Status'] = ShareMemory.ConqueSoleSharedMemory()
+g_share_table['/Network_DHCP_Status'].create('/Network_DHCP_Status', 'bmchealth_record_dhcp_status.txt')
+g_share_table['/Network_Link_Status'].create('/Network_Link_Status', 'bmchealth_record_down_status.txt')
 
 DBUS_NAME = 'org.openbmc.Sensors'
 DBUS_INTERFACE = 'org.freedesktop.DBus.Properties'
@@ -61,12 +68,11 @@ def LogEventBmcHealthMessages(s_assert="", s_event_indicator="", \
         print "LogEventBmcHealthMessages error!! " + s_event_indicator
 
 def bmchealth_check_network():
+    global g_share_table
     carrier_file_path = "/sys/class/net/eth0/carrier"
     operstate_file_path = "/sys/class/net/eth0/operstate"
     check_ipaddr_command ="ifconfig eth0"
     check_ipaddr_keywords = "inet addr"
-    record_dhcp_file_path = "/tmp/bmchealth_record_dhcp_status.txt"
-    record_down_file_path = "/tmp/bmchealth_record_down_status.txt"
 
     carrier = ""    #0 or 1
     operstate = ""  #up or down
@@ -76,15 +82,13 @@ def bmchealth_check_network():
     g_net_down_status = 1
 
     try:
-        with open(record_dhcp_file_path, 'r') as f:
-            for line in f:
-                g_dhcp_status = int(line.rstrip('\n'))
+        g_dhcp_status = g_share_table['/Network_DHCP_Status'].read()
+        g_dhcp_status = int(g_dhcp_status)
     except:
         pass
     try:
-        with open(record_down_file_path, 'r') as f:
-            for line in f:
-                g_net_down_status = int(line.rstrip('\n'))
+        g_net_down_status = g_share_table['/Network_Link_Status'].read()
+        g_net_down_status = int(g_net_down_status)
     except:
         pass
 
@@ -141,11 +145,9 @@ def bmchealth_check_network():
         g_net_down_status = 1
 
     if org_dhcp_status != g_dhcp_status:
-        with open(record_dhcp_file_path, 'w') as f:
-            f.write(str(g_dhcp_status))
+        g_share_table['/Network_DHCP_Status'].write(str(g_dhcp_status))
     if org_down_status != g_net_down_status:
-        with open(record_down_file_path, 'w') as f:
-            f.write(str(g_net_down_status))
+        g_share_table['/Network_Link_Status'].write(str(g_net_down_status))
     return True
 
 def bmchealth_fix_and_check_mac():
