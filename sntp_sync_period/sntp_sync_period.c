@@ -62,7 +62,7 @@ int sntp_sync()
                     event_dir_type, evd1);
                 system(cmd);
 
-                sprintf(cmd, "python /usr/sbin/bmclogevent_ctl.py  %d, %d", NTP_SENSOR_NUM, (EVENT_DIR_DEASSERT << 7));
+                sprintf(cmd, "python /usr/sbin/bmclogevent_ctl.py  %d  %d", NTP_SENSOR_NUM, (EVENT_DIR_DEASSERT << 7));
                 system(cmd);
                 assert_ntp_failed = 0;
             } else {
@@ -87,7 +87,7 @@ int sntp_sync()
                     event_dir_type, evd1);
                 system(cmd);
 
-                sprintf(cmd, "python /usr/sbin/bmclogevent_ctl.py  %d, %d", NTP_SENSOR_NUM, (EVENT_DIR_ASSERT << 7));
+                sprintf(cmd, "python /usr/sbin/bmclogevent_ctl.py  %d  %d", NTP_SENSOR_NUM, (EVENT_DIR_ASSERT << 7));
                 system(cmd);
                 assert_ntp_failed = 1;
             }
