@@ -22,6 +22,7 @@ import bmclogevent_ctl
 import traceback
 from time import sleep
 import property_file_ctl
+from bmchealth_handler import watch_redfish, watch_event_service
 
 SENSOR_BUS = 'org.openbmc.Sensors'
 # sensors include /org/openbmc/sensors and /org/openbmc/control
@@ -999,6 +1000,8 @@ class Hwmons():
 		return True
 
 	def kickWatchdog(self):
+		watch_redfish()
+		watch_event_service()
 		if os.path.exists(WATCHDOG_FILE_PATH):
 			os.remove(WATCHDOG_FILE_PATH)
 		return True
