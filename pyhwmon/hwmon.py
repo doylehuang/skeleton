@@ -120,8 +120,7 @@ class Hwmons():
 				for line in f:
 					val = line.rstrip('\n')
 		except (OSError, IOError):
-			if filename != "N/A":
-				print "Cannot read attributes:", filename
+			pass
 		return val
 
 	def writeAttribute(self,filename,value):
@@ -963,8 +962,6 @@ class Hwmons():
 						obj_mapping.append(hwmon['names'][attribute]['object_path'])
 						self.addObject(dpath,dpath+attribute,hwmon['names'][attribute])
 
-			else:
-				print "WARNING - hwmon: Unhandled hwmon: "+dpath
 		self.addSensorMonitor()
 
 		for dpath in System.HWMON_CONFIG:
