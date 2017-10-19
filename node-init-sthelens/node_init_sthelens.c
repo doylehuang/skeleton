@@ -165,11 +165,5 @@ main(int argc, char *argv[])
     system("gpioutil -n RM_SYS_THROTTLE_N");
     system("gpioutil -n FIO_RM_SYS_THROTTLE_N");
 
-    /* Set I2C frequency, HW defined SMB1-SMB4 should set to 0x77777305 equals to 93K */
-    system("devmem 0x1e78a044 32 0x77777305");
-    system("devmem 0x1e78a084 32 0x77777305");
-    system("devmem 0x1e78a0c4 32 0x77777305");
-    system("devmem 0x1e78a104 32 0x77777305");
-
     return 0;
 }
