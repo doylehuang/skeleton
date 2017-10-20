@@ -313,7 +313,7 @@ class Hwmons():
 							self.event_manager.create(log)
 							self.throttle_state[objpath] = 1
 							intf.Set(SensorValue.IFACE_NAME, 'value', 1) #set value = 1 to notify system throttle is 'critical'
-							bmclogevent_ctl.bmchealth_control_status_led(sensor_number = sensor_number, event_dir = 0x0)
+							#bmclogevent_ctl.bmchealth_control_status_led(sensor_number = sensor_number, event_dir = 0x0)
 			elif raw_value == 1 and self.throttle_state[objpath] == 1:
 				event_dir = 0
 				event_type = 0x3
@@ -330,7 +330,7 @@ class Hwmons():
 							self.event_manager.create(log)
 							self.throttle_state[objpath] = 0
 							intf.Set(SensorValue.IFACE_NAME, 'value', 0) #set value = 0 to notify system throttle is 'ok'
-							bmclogevent_ctl.bmchealth_control_status_led(sensor_number = sensor_number, event_dir = 0x80)
+							#bmclogevent_ctl.bmchealth_control_status_led(sensor_number = sensor_number, event_dir = 0x80)
 
 		except Exception as e:
 			traceback.print_exc()
@@ -731,8 +731,8 @@ class Hwmons():
 		log = Event.from_binary(severity, sensortype, sensor_number, event_dir | event_type, evd1, evd2, evd3)
 		logid = self.event_manager.create(log)
 
-		if logid != 0:
-			bmclogevent_ctl.bmchealth_control_status_led(severity, sensor_number, event_dir, evd1)
+		#if logid != 0:
+		#	bmclogevent_ctl.bmchealth_control_status_led(severity, sensor_number, event_dir, evd1)
 
 		return True
 
