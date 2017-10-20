@@ -373,8 +373,6 @@ def _add_gpu_temperature_sensor(configs, index, sensornumber):
 def _add_gpu_mem_temperature_sensor(configs, index, sensornumber):
     objpath = '/org/openbmc/sensors/gpu/gpu_mem_temp'
     config = {
-        'critical_upper': 85,
-        'positive_hysteresis': 2,
         'device_node': '/tmp/gpu/gpu%d_mem_temp' % index,
         'object_path': 'sensors/gpu/gpu_mem_temp',
         'poll_interval': 5000,
