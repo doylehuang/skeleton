@@ -237,42 +237,6 @@ def bmchealth_check_i2c(NUM_BUS):
             print "[bmchealth_check_i2c]exception !!!"
     return True
 
-def bmchealth_check_fw_update_start():
-    fw_update_start_check = "/var/lib/obmc/fw_update_start"
-    psu_fw_update_start_check = "/var/lib/obmc/psu_fwupdate_record"
-    fpga_fw_update_start_check =  "/var/lib/obmc/fpga_fwupdate_record"
-    #check BMC fw update start
-    if os.path.exists(fw_update_start_check):
-        print "Log BMC FW update start"
-        try:
-            with open(fw_update_start_check, 'r') as f:
-                partition = int(f.readline())
-        except:
-            print "[bmchealth_check_fw_update_start]exception !!!"
-        LogEventBmcHealthMessages("Asserted", "Firmware Update Started","BMC Firmware Update Started",data={'index':partition})
-        os.rename(fw_update_start_check, "/var/lib/obmc/fw_update_complete")
-    #check PSU fw update start
-    if os.path.exists(psu_fw_update_start_check):
-        try:
-            with open(psu_fw_update_start_check, 'r') as f:
-                psu_id = int(f.readline())
-                print"log psu_fwupdate_record psu_id = "+str(psu_id)
-                LogEventBmcHealthMessages("Asserted", "Firmware Update Started","PSU Firmware Update Started",data={'index':psu_id})
-                os.rename(psu_fw_update_start_check, "/var/lib/obmc/psu_fwupdate_complete")
-        except:
-                print "[bmchealth_check_fw_update_start]exception !!!"
-    #check FPGA fw update start
-    if os.path.exists(fpga_fw_update_start_check):
-        try:
-            with open(fpga_fw_update_start_check, 'r') as f:
-                fpga_id = int(f.readline())
-                print"log fpga_fwupdate_record fpga_id = "+str(fpga_id)
-                LogEventBmcHealthMessages("Asserted", "Firmware Update Started","FPGA Firmware Update Started",data={'index':fpga_id})
-                os.rename(fpga_fw_update_start_check, "/var/lib/obmc/fpga_fwupdate_complete")
-        except:
-                print "[bmchealth_check_fw_update_start]exception !!!"
-    return True
-
 def bmchealth_check_fw_update_complete():
     fw_update_complete_check = "/var/lib/obmc/fw_update_complete"
     psu_fw_update_complete_check = "/var/lib/obmc/psu_fwupdate_complete"
@@ -588,7 +552,6 @@ if __name__ == '__main__':
     bmchealth_check_fw_update_complete()
     bmchealth_check_boot_spi()
     glib.timeout_add_seconds(5,bmchealth_check_network)
-    glib.timeout_add_seconds(1,bmchealth_check_fw_update_start)
     glib.timeout_add_seconds(5,bmchealth_check_i2c, 5)
     glib.timeout_add_seconds(5,bmchealth_check_log_rollover)
     glib.timeout_add_seconds(5,bmchealth_check_memory_utilization)
