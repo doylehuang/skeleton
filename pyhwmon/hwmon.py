@@ -114,14 +114,17 @@ class Hwmons():
 		self.record_pgood = 0
 		glib.timeout_add_seconds(DIR_POLL_INTERVAL, self.scanDirectory)
 
-	def readAttribute(self,filename):
+	def readAttribute(self,filename, count=0):
 		val = "-1"
 		try:
-			with open(filename, 'r') as f:
-				for line in f:
-					val = line.rstrip('\n')
+			if os.path.exists(filename):
+				with open(filename, 'r') as f:
+					for line in f:
+						val = line.rstrip('\n')
 		except (OSError, IOError):
-			pass
+			if count < 2:
+				sleep(0.01)
+				val = self.readAttribute(filename, count+1)
 		return val
 
 	def writeAttribute(self,filename,value):
