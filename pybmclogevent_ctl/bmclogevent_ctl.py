@@ -159,7 +159,7 @@ def bmclogevent_set_value(obj_path, val, mask=0xFFFF, offset=-1):
     return 0
 
 def BmcLogEventMessages(objpath = "", s_event_identify="", s_assert="", \
-                                    s_event_indicator="", s_evd_desc="", data={}):
+                                    s_event_indicator="", s_evd_desc="", data={}, sensortype="", sensor_number=0):
     evd1 = 0xff
     evd2 = 0xff
     evd3 = 0xff
@@ -214,11 +214,17 @@ def BmcLogEventMessages(objpath = "", s_event_identify="", s_assert="", \
     except:
         return result
 
-    bus = get_dbus()
-    obj = bus.get_object(DBUS_NAME, objpath, introspect=False)
-    intf = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
-    sensortype = int(intf.Get(HwmonSensor.IFACE_NAME, 'sensor_type'), 16)
-    sensor_number = intf.Get(HwmonSensor.IFACE_NAME, 'sensornumber')
+    try:
+        if sensortype == "" or sensor_number == 0:
+            bus = get_dbus()
+            obj = bus.get_object(DBUS_NAME, objpath, introspect=False)
+            intf = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
+            sensortype = int(intf.Get(HwmonSensor.IFACE_NAME, 'sensor_type'), 16)
+            sensor_number = intf.Get(HwmonSensor.IFACE_NAME, 'sensornumber')
+        else:
+            sensortype = int(sensortype, 16)
+    except:
+        return result
     if isinstance(sensor_number, basestring):
         sensor_number =  int(sensor_number , 16)
     log = Event.from_binary(serverity, sensortype, sensor_number, event_type | b_assert, evd1, evd2, evd3)

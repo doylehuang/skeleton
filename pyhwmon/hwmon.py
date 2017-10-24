@@ -23,6 +23,7 @@ import traceback
 from time import sleep
 import property_file_ctl
 from bmchealth_handler import watch_redfish, watch_event_service
+from sensor_manager2 import *
 
 SENSOR_BUS = 'org.openbmc.Sensors'
 # sensors include /org/openbmc/sensors and /org/openbmc/control
@@ -88,16 +89,17 @@ PMBUS_STATUS_BYTES = {
 	0x02: 0x01
 }
 
-class Hwmons():
-	def __init__(self,bus):
+class Hwmons(SensorManager):
+	def __init__(self,bus, name):
+		super(self.__class__, self).__init__(bus, name)
 		self.sensors = { }
 		self.hwmon_root = { }
 		self.threshold_state = {}
 		self.psu_state = {}
 		self.throttle_state = {}
 		self.session_audit = {}
-		self.pgood_obj = bus.get_object('org.openbmc.control.Power', '/org/openbmc/control/power0', introspect=False)
-		self.pgood_intf = dbus.Interface(self.pgood_obj,dbus.PROPERTIES_IFACE)
+		self.pgood_obj = None
+		self.pgood_intf = None
 		self.path_mapping = {}
 		self.event_manager = EventManager()
 		self.check_entity_presence = {}
@@ -190,18 +192,24 @@ class Hwmons():
 			if objpath not in self.check_entity_mapping:
 				self.check_entity_mapping[objpath] = 0
 			if raw_value == hwmon['inverse'] and self.check_entity_presence[objpath] == 1:
+				sensortype = self.objects[entity_presence_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+				sensor_number = self.objects[entity_presence_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 				bmclogevent_ctl.BmcLogEventMessages(entity_presence_obj_path, \
 						"Entity Presence" ,"Asserted", "Entity Presence" , \
-						data={'entity_device':hwmon['entity'], 'entity_index':hwmon['index']})
-				bmclogevent_ctl.bmclogevent_set_value(entity_presence_obj_path ,1)
+						data={'entity_device':hwmon['entity'], 'entity_index':hwmon['index']} , \
+						sensortype=sensortype, sensor_number=sensor_number)
+				self.objects[entity_presence_obj_path].Set(SensorValue.IFACE_NAME, 'value', 1)
 				self.check_entity_presence[objpath] = 0
 				self.check_entity_mapping[objpath] = 1
 			elif raw_value != hwmon['inverse']:
 				if self.check_entity_presence[objpath] == 0:
+					sensortype = self.objects[entity_presence_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+					sensor_number = self.objects[entity_presence_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 					bmclogevent_ctl.BmcLogEventMessages(entity_presence_obj_path, \
 						"Entity Presence" ,"Deasserted", "Entity Presence" , \
-						data={'entity_device':hwmon['entity'], 'entity_index':hwmon['index']})
-					bmclogevent_ctl.bmclogevent_set_value(entity_presence_obj_path, 0)
+						data={'entity_device':hwmon['entity'], 'entity_index':hwmon['index']} ,\
+						sensortype=sensortype, sensor_number=sensor_number)
+					self.objects[entity_presence_obj_path].Set(SensorValue.IFACE_NAME, 'value', 0)
 					self.check_entity_mapping[objpath] = 0
 				self.check_entity_presence[objpath] = 1
 		return True
@@ -216,16 +224,11 @@ class Hwmons():
 			if self.check_entity_mapping[hwmon['mapping']] == 1:
 				return True
 		if hwmon.has_key('ready') and hwmon['ready'] == 0:
-			plx_obj = bus.get_object(SENSOR_BUS,"/org/openbmc/sensors/pex/pex",introspect=False)
-			gpu_obj = bus.get_object(SENSOR_BUS,"/org/openbmc/sensors/gpu/gpu_temp",introspect=False)
-			plx_intf = dbus.Interface(plx_obj,dbus.PROPERTIES_IFACE)
-			gpu_intf = dbus.Interface(gpu_obj,dbus.PROPERTIES_IFACE)
-
 			plx_ready = 0
 			gpu_ready = 0
 			try:
-				plx_ready = plx_intf.Get(HwmonSensor.IFACE_NAME,'ready')
-				gpu_ready = gpu_intf.Get(HwmonSensor.IFACE_NAME,'ready')
+				plx_ready = self.objects["/org/openbmc/sensors/pex/pex"].Get(HwmonSensor.IFACE_NAME,'ready')
+				gpu_ready = self.objects["/org/openbmc/sensors/gpu/gpu_temp"].Get(HwmonSensor.IFACE_NAME,'ready')
 			except:
 				pass
 			if plx_ready == 1 and gpu_ready == 1:
@@ -238,19 +241,25 @@ class Hwmons():
 			if hwmon['sensornumber'] not in self.check_subsystem_health:
 				self.check_subsystem_health[hwmon['sensornumber']] = 1
 			if raw_value == -1 and self.check_subsystem_health[hwmon['sensornumber']] == 1:
+				sensortype = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+				sensor_number = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 				bmclogevent_ctl.BmcLogEventMessages(check_subsystem_health_obj_path, \
 						"Management Subsystem Health" ,"Asserted", "Management Subsystem Health" , \
-						data={'event_status':0xC4, 'sensor_number':hwmon['sensornumber']})
-				bmclogevent_ctl.bmclogevent_set_value(check_subsystem_health_obj_path , 1)
+						data={'event_status':0xC4, 'sensor_number':hwmon['sensornumber']} ,\
+						sensortype=sensortype, sensor_number=sensor_number)
+				self.objects[check_subsystem_health_obj_path].Set(SensorValue.IFACE_NAME, 'value', 1)
 				if hwmon.has_key('firmware_update'):
 					self.read_psu_info(hwmon['index'])
 				self.check_subsystem_health[hwmon['sensornumber']] = 0
 			elif raw_value >= 0:
 				if self.check_subsystem_health[hwmon['sensornumber']] == 0:
+					sensortype = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+					sensor_number = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 					bmclogevent_ctl.BmcLogEventMessages(check_subsystem_health_obj_path, \
 					"Management Subsystem Health" ,"Deasserted", "Management Subsystem Health", \
-						data={'event_status':0xC4, 'sensor_number':hwmon['sensornumber']})
-					bmclogevent_ctl.bmclogevent_set_value(check_subsystem_health_obj_path, 0)
+						data={'event_status':0xC4, 'sensor_number':hwmon['sensornumber']},\
+						sensortype=sensortype, sensor_number=sensor_number)
+					self.objects[check_subsystem_health_obj_path].Set(SensorValue.IFACE_NAME, 'value', 0)
 					if hwmon.has_key('firmware_update'):
 						self.read_psu_info(hwmon['index'])
 				self.check_subsystem_health[hwmon['sensornumber']] = 1
@@ -280,8 +289,6 @@ class Hwmons():
 		return True
 
 	def check_throttle_state(self, objpath, attribute, hwmon):
-		obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
-		intf = dbus.Interface(obj,dbus.PROPERTIES_IFACE)
 		try:
 			power_consum = 0
 			power_consum += int(self.readAttribute(self.pmbus1_hwmon), 10)
@@ -314,7 +321,7 @@ class Hwmons():
 									event_dir | event_type, evd1, int(evd2, 16), int(evd3, 16))
 							self.event_manager.create(log)
 							self.throttle_state[objpath] = 1
-							intf.Set(SensorValue.IFACE_NAME, 'value', 1) #set value = 1 to notify system throttle is 'critical'
+							self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', 1) #set value = 1 to notify system throttle is 'critical'
 							bmclogevent_ctl.bmchealth_control_status_led(sensor_number = sensor_number, event_dir = 0x0)
 			elif raw_value == 1 and self.throttle_state[objpath] == 1:
 				event_dir = 0
@@ -331,7 +338,7 @@ class Hwmons():
 									event_dir | event_type, evd1, int(evd2, 16), int(evd3, 16))
 							self.event_manager.create(log)
 							self.throttle_state[objpath] = 0
-							intf.Set(SensorValue.IFACE_NAME, 'value', 0) #set value = 0 to notify system throttle is 'ok'
+							self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', 0) #set value = 0 to notify system throttle is 'ok'
 							bmclogevent_ctl.bmchealth_control_status_led(sensor_number = sensor_number, event_dir = 0x80)
 
 		except Exception as e:
@@ -357,38 +364,56 @@ class Hwmons():
 					idFilter = 'Accepted password for admin'
 					idPosition = fileString.find(idFilter)
 					if idPosition != -1:
+						sensortype = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+						sensor_number = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-												"Asserted",  "SSH Activated", "SSH Activated")
+												"Asserted",  "SSH Activated", "SSH Activated",\
+												sensortype=sensortype, sensor_number=sensor_number)
 
 					idFilter = 'Failed password for admin'
 					idPosition = fileString.find(idFilter)
 					if idPosition != -1:
+						sensortype = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+						sensor_number = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-												"Asserted",  "SSH Failed Password", "SSH Failed Password")
+												"Asserted",  "SSH Failed Password", "SSH Failed Password",\
+												sensortype=sensortype, sensor_number=sensor_number)
 
 					idFilter = 'Invalid user'
 					idPosition = fileString.find(idFilter)
 					if idPosition != -1:
+						sensortype = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+						sensor_number = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-												"Asserted",  "SSH Invalid User", "SSH Invalid User")
+												"Asserted",  "SSH Invalid User", "SSH Invalid User",\
+												sensortype=sensortype, sensor_number=sensor_number)
 
 					idFilter = 'Failed password for invalid user sysadmin'
 					idPosition = fileString.find(idFilter)
 					if idPosition != -1:
+						sensortype = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+						sensor_number = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-												"Asserted",  "SSH Invalid User", "SSH Invalid User")
+												"Asserted",  "SSH Invalid User", "SSH Invalid User",\
+												sensortype=sensortype, sensor_number=sensor_number)
 
 					idFilter = 'Close session'
 					idPosition = fileString.find(idFilter)
 					if idPosition != -1:
+						sensortype = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+						sensor_number = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-												"Asserted",  "SSH Closed Session By Command", "SSH Closed Session By Command")
+												"Asserted",  "SSH Closed Session By Command", "SSH Closed Session By Command",\
+												sensortype=sensortype, sensor_number=sensor_number)
 
 					idFilter = 'Timeout'
 					idPosition = fileString.find(idFilter)
 					if idPosition != -1:
+						sensortype = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+						sensor_number = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
-												"Asserted",  "SSH Closed Session By Timeout", "SSH Closed Session By Timeout")
+												"Asserted",  "SSH Closed Session By Timeout", "SSH Closed Session By Timeout",\
+												sensortype=sensortype, sensor_number=sensor_number)
 
 				file.close()
 				os.remove(patch)
@@ -400,8 +425,6 @@ class Hwmons():
 		return True
 
 	def check_pmbus_state(self, objpath, hwmons):
-		obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
-		intf = dbus.Interface(obj,dbus.PROPERTIES_IFACE)
 		for hwmon in hwmons:
 			try:
 				if 'bus_number' in hwmon:
@@ -427,7 +450,7 @@ class Hwmons():
 						continue
 				hwmon['reading_error_count'] = 0
 				self.subsystem_health_check(hwmon,raw_value,delay=False)
-				intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value)
+				self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value)
 				if raw_value == -1:
 					continue
 
@@ -481,18 +504,22 @@ class Hwmons():
 	def check_system_event(self, current_pgood):
 		try:
 			system_event_objpath = "/org/openbmc/sensors/system_event"
-			obj = bus.get_object(SENSOR_BUS,system_event_objpath,introspect=False)
-			intf = dbus.Interface(obj,dbus.PROPERTIES_IFACE)
 			if self.record_pgood != current_pgood:
 				result = {'logid':0}
 				if current_pgood == 1: #current poweroff->poweron condition
-					intf.Set(HwmonSensor.IFACE_NAME, 'severity_health', 'OK')
+					self.objects[system_event_objpath].Set(HwmonSensor.IFACE_NAME, 'severity_health', 'OK')
+					sensortype = self.objects[system_event_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+					sensor_number = self.objects[system_event_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 					result = bmclogevent_ctl.BmcLogEventMessages(system_event_objpath, "System Event", \
-						"Asserted",  "System Event PowerOn", "System Event PowerOn")
+						"Asserted",  "System Event PowerOn", "System Event PowerOn",\
+						sensortype=sensortype, sensor_number=sensor_number)
 				elif current_pgood == 0: #current poweron->poweroff condition
-					intf.Set(HwmonSensor.IFACE_NAME, 'severity_health', 'Critical')
+					self.objects[system_event_objpath].Set(HwmonSensor.IFACE_NAME, 'severity_health', 'Critical')
+					sensortype = self.objects[system_event_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+					sensor_number = self.objects[system_event_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 					result = bmclogevent_ctl.BmcLogEventMessages(system_event_objpath, "System Event", \
-						"Asserted",  "System Event PowerOff", "System Event PowerOff")
+						"Asserted",  "System Event PowerOff", "System Event PowerOff",\
+						sensortype=sensortype, sensor_number=sensor_number)
 
 				if (result['logid'] !=0):
 					self.record_pgood = current_pgood
@@ -517,9 +544,7 @@ class Hwmons():
 				elif objpath == '/org/openbmc/sensors/session_audit':
 					self.sesson_audit_check(objpath, hwmons[0])
 					continue
-				obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
-				intf = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
-				threshold_props = intf.GetAll(SensorThresholds.IFACE_NAME)
+				threshold_props = self.objects[objpath].GetAll(SensorThresholds.IFACE_NAME)
 			except:
 				#skip this sensor set
 				continue
@@ -538,9 +563,9 @@ class Hwmons():
 							if  current_pgood == 0:
 								pre_pgood = 0
 								if 'sensornumber' in hwmon:
-									intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
+									self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
 								else:
-									intf.Set(SensorValue.IFACE_NAME, 'value', -1)
+									self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', -1)
 								continue
 						except (OSError, IOError):
 							print 'Get power good status failure'
@@ -571,14 +596,14 @@ class Hwmons():
 						if hwmon['reading_error_count'] < 3:
 							continue
 						if 'sensornumber' in hwmon:
-							intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
+							self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
 						else:
-							intf.Set(SensorValue.IFACE_NAME, 'value', -1)
+							self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', -1)
 					else:
 						if 'sensornumber' in hwmon:
-							intf.Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value / scale)
+							self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value / scale)
 						else:
-							intf.Set(SensorValue.IFACE_NAME, 'value', raw_value / scale)
+							self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', raw_value / scale)
 					hwmon['reading_error_count'] = 0
 
 					if pre_pgood == 0 and current_pgood == 1:
@@ -602,8 +627,8 @@ class Hwmons():
 							hwmon['threshold_state'] = origin_threshold_state
 							continue
 						hwmon['status_change_count'] = 0
-						intf.Set(SensorThresholds.IFACE_NAME, \
-								'threshold_state_'+str(hwmon['sensornumber']), hwmon['threshold_state'])
+						self.objects[objpath].Set(SensorThresholds.IFACE_NAME, \
+							'threshold_state_'+str(hwmon['sensornumber']), hwmon['threshold_state'])	
 						severity = Event.SEVERITY_INFO
 						event_type_code = 0x0
 
@@ -655,6 +680,9 @@ class Hwmons():
 			obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
 			intf_p = dbus.Interface(obj, dbus.PROPERTIES_IFACE)
 			intf = dbus.Interface(obj,HwmonSensor.IFACE_NAME)
+			if  self.pgood_intf == None:
+				self.pgood_obj = bus.get_object('org.openbmc.control.Power', '/org/openbmc/control/power0', introspect=False)
+				self.pgood_intf = dbus.Interface(self.pgood_obj,dbus.PROPERTIES_IFACE)
 			current_pgood = self.pgood_intf.Get('org.openbmc.control.Power', 'pgood')
 			self.check_system_event(current_pgood)
 			if not standby_monitor:
@@ -746,23 +774,19 @@ class Hwmons():
 			print "HWMON add: "+objpath+" : "+hwmon_path
 
 			## register object with sensor manager
-			obj = bus.get_object(SENSOR_BUS,SENSOR_PATH,introspect=False)
-			intf = dbus.Interface(obj,SENSOR_BUS)
-			intf.register("HwmonSensor",objpath)
+			self.register("HwmonSensor",objpath)
 
 			## set some properties in dbus object
-			obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
-			intf = dbus.Interface(obj,dbus.PROPERTIES_IFACE)
-			intf.Set(HwmonSensor.IFACE_NAME,'filename',hwmon_path)
+			self.objects[objpath].Set(HwmonSensor.IFACE_NAME,'filename',hwmon_path)
 
 			## check if one of thresholds is defined to know
 			## whether to enable thresholds or not
 			if (hwmon.has_key('critical_upper') or hwmon.has_key('critical_lower')):
-				intf.Set(SensorThresholds.IFACE_NAME,'thresholds_enabled',True)
+				self.objects[objpath].Set(SensorThresholds.IFACE_NAME,'thresholds_enabled',True)
 
 			for prop in hwmon.keys():
 				if (IFACE_LOOKUP.has_key(prop)):
-					intf.Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
+					self.objects[objpath].Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
 					print "Setting: "+prop+" = "+str(hwmon[prop])
 
 			self.sensors[objpath]=True
@@ -792,29 +816,24 @@ class Hwmons():
 				hwmon_path = hwmon['device_node']
 			if (self.sensors.has_key(objpath) == False):
 				## register object with sensor manager
-				obj = bus.get_object(SENSOR_BUS,SENSOR_PATH,introspect=False)
-				intf = dbus.Interface(obj,SENSOR_BUS)
-				intf.register("HwmonSensor",objpath)
+				self.register("HwmonSensor",objpath)
 
 				## set some properties in dbus object
-				obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
-				intf = dbus.Interface(obj,dbus.PROPERTIES_IFACE)
-				intf.Set(HwmonSensor.IFACE_NAME,'filename',hwmon_path)
+				self.objects[objpath].Set(HwmonSensor.IFACE_NAME,'filename',hwmon_path)
 				# init value as
 				val = -1
 				if hwmon.has_key('value'):
 					val = hwmon['value']
-					intf_h = dbus.Interface(obj,HwmonSensor.IFACE_NAME)
-					intf_h.setByPoll(val)
+					self.objects[objpath].setByPoll(val)
 
 				## check if one of thresholds is defined to know
 				## whether to enable thresholds or not
 				if (hwmon.has_key('critical_upper') or hwmon.has_key('critical_lower')):
-					intf.Set(SensorThresholds.IFACE_NAME,'thresholds_enabled',True)
+					self.objects[objpath].Set(SensorThresholds.IFACE_NAME,'thresholds_enabled',True)
 
 				for prop in hwmon.keys():
 					if (IFACE_LOOKUP.has_key(prop)):
-						intf.Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
+						self.objects[objpath].Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
 
 				self.sensors[objpath]=True
 				self.threshold_state[objpath] = "NORMAL"
@@ -847,9 +866,7 @@ class Hwmons():
 
 					if (self.sensors.has_key(objpath) == False):
 						## register object with sensor manager
-						sensor_obj = bus.get_object(SENSOR_BUS,SENSOR_PATH,introspect=False)
-						sensor_intf = dbus.Interface(sensor_obj,SENSOR_BUS)
-						sensor_intf.register("HwmonSensor",objpath)
+						self.register("HwmonSensor",objpath)
 
 					## check if one of thresholds is defined to know
 					## whether to enable thresholds or not
@@ -858,8 +875,6 @@ class Hwmons():
 						hwmon.has_key('warning_upper') or hwmon.has_key('warning_lower')):
 						hwmon['thresholds_enabled'] = True
 
-					obj = bus.get_object(SENSOR_BUS,objpath,introspect=False)
-					intf = dbus.Interface(obj,dbus.PROPERTIES_IFACE)
 					if ('reading_type' in hwmon and hwmon['reading_type'] == 0x01) \
 						or ('sensornumber' in hwmon and hwmon['sensornumber'] >= 0x83 and hwmon['sensornumber'] <= 0x88):
 						if (self.sensors.has_key(hwmon['sensornumber']) == False):
@@ -868,10 +883,10 @@ class Hwmons():
 									if prop == 'firmware_update':
 										property_file_ctl.SetProperty(objpath, prop, hwmon[prop])
 									else:
-										intf.Set(IFACE_MAPPING[prop],prop+'_'+str(hwmon['sensornumber']),hwmon[prop])
+										self.objects[objpath].Set(IFACE_MAPPING[prop],prop+'_'+str(hwmon['sensornumber']),hwmon[prop])
 							self.sensors[hwmon['sensornumber']]=True
 						# init threshold state
-						intf.Set(IFACE_MAPPING['threshold_state'],'threshold_state_'+str(hwmon['sensornumber']),"NORMAL")
+						self.objects[objpath].Set(IFACE_MAPPING['threshold_state'],'threshold_state_'+str(hwmon['sensornumber']),"NORMAL")
 
 						if 'critical_upper' not in hwmon:
 							hwmon['critical_upper'] = None
@@ -893,7 +908,7 @@ class Hwmons():
 					else:
 						for prop in hwmon.keys():
 							if (IFACE_LOOKUP.has_key(prop)):
-								intf.Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
+								self.objects[objpath].Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
 					## Monitor Entity Presence only once when AC on
 					if hwmon.has_key('monitor_entity'):
 						if hwmon['monitor_entity'] == 0:
@@ -901,9 +916,9 @@ class Hwmons():
 							hwmon['monitor_entity'] = 1
 							entity_list[objpath] = [hwmon, raw_value]
 							if raw_value == 0:
-								intf.Set(SensorValue.IFACE_NAME, 'value', 1)
+								self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', 1)
 							elif raw_value == 1:
-								intf.Set(SensorValue.IFACE_NAME, 'value', 0)
+								self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', 0)
 				if hwmon.has_key('poll_interval'):
 					sensor_list.append([objpath, hwmons])
 				self.sensors[objpath]=True
@@ -975,10 +990,13 @@ class Hwmons():
 						if System.HWMON_CONFIG[dpath]['names'][attribute]['object_path'] not in obj_mapping:
 							if self.check_subsystem_health[objpath] == 1:
 								try:
+									sensortype = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+									sensor_number = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 									bmclogevent_ctl.BmcLogEventMessages(check_subsystem_health_obj_path, \
 											"Management Subsystem Health" ,"Asserted", "Management Subsystem Health", \
-											data={'event_status':0x4, 'sensor_number':System.HWMON_CONFIG[dpath]['names'][attribute]['sensornumber']})
-									bmclogevent_ctl.bmclogevent_set_value(check_subsystem_health_obj_path, 1)
+											data={'event_status':0x4, 'sensor_number':System.HWMON_CONFIG[dpath]['names'][attribute]['sensornumber']},\
+											sensortype=sensortype, sensor_number=sensor_number)
+									self.objects[check_subsystem_health_obj_path].Set(SensorValue.IFACE_NAME, 'value', 1)
 									self.check_subsystem_health[objpath] = 0
 								except:
 									pass
@@ -1018,9 +1036,19 @@ if __name__ == '__main__':
 
 	os.nice(-19)
 	save_pid()
-	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-	bus = get_dbus()
-	root_sensor = Hwmons(bus)
+	name = dbus.service.BusName(DBUS_NAME,bus)
+	root_sensor = Hwmons(bus, OBJ_PATH)
+
+	## instantiate non-polling sensors
+	## these don't need to be in seperate process
+	for (id, the_sensor) in System.MISC_SENSORS.items():
+		sensor_class = the_sensor['class']
+		obj_path = System.ID_LOOKUP['SENSOR'][id]
+		sensor_obj = getattr(obmc.sensors, sensor_class)(bus, obj_path)
+		if 'os_path' in the_sensor:
+			sensor_obj.sysfs_attr = the_sensor['os_path']
+		root_sensor.add(obj_path, sensor_obj)
+
 	mainloop = glib.MainLoop()
 
 	print "Starting HWMON sensors"

@@ -13,6 +13,8 @@ import obmc_system_config as System
 DBUS_NAME = 'org.openbmc.Sensors'
 OBJ_PATH = '/org/openbmc/sensors'
 
+dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+bus = get_dbus()
 
 class SensorManager(DbusProperties,DbusObjectManager):
 	def __init__(self,bus,name):
@@ -43,11 +45,8 @@ class SensorManager(DbusProperties,DbusObjectManager):
 			print "ERROR: Sensor not found: "+path
 			
 if __name__ == '__main__':
-	dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-	bus = get_dbus()
 	name = dbus.service.BusName(DBUS_NAME,bus)
 	root_sensor = SensorManager(bus,OBJ_PATH)
-
 
 	## instantiate non-polling sensors
 	## these don't need to be in seperate process
