@@ -24,6 +24,12 @@ struct st_fan_closeloop_par {
 	double closeloop_speed;
 	int closeloop_sensor_reading;
 	int sample_n;
+
+	double current_fanspeed;
+	int total_integral_error;
+	int cur_interal_Err;
+	int last_interal_error;
+	int groups_sensor_reading[10];
 };
 
 
