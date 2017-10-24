@@ -1123,14 +1123,12 @@ FAN_ALGORITHM_CONFIG = {
             'org.openbmc.Sensors', 'org.openbmc.SensorValue'],
         'CLOSE_LOOP_GROUPS_5' : [
             'org.openbmc.Sensors', 'org.openbmc.SensorValue'],
-        'CLOSE_LOOP_GROUPS_6' : [
-            'org.openbmc.Sensors', 'org.openbmc.SensorValue'],
     },
 
     'CHASSIS_POWER_STATE': ['/org/openbmc/control/chassis0'],
     'FAN_INPUT_OBJ':
         [
-            "/org/openbmc/sensors/fan/fan_tacho",
+            "/sys/devices/platform/ast_pwm_tacho.0/tacho%d_rpm",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x11", #base sensor number
             "12", #releate sensor list size
@@ -1155,10 +1153,8 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'OPEN_LOOP_GROUPS_1':
         [
-            "/org/openbmc/sensors/temperature/TMP",
-            "SensorNumberList", #notfity following setting about SensorNumberList
-            "0x05", #base sensor number
-            "1", #releate sensor list size
+            "/sys/class/hwmon/hwmon1/temp1_input",
+            "/sys/class/hwmon/hwmon2/temp1_input",
             #Thermal team only watch temp4 ambinet
         ],
 #Profile #2 GPU1~8, Treal
@@ -1172,7 +1168,7 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_1':
         [
-            "/org/openbmc/sensors/gpu/gpu_temp",
+            "/tmp/gpu/gpu%d_temp",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x41", #base sensor number
             "8", #releate sensor list size
@@ -1188,7 +1184,7 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_2':
         [
-            "/org/openbmc/sensors/pex/pex",
+            "/tmp/pex/pex%d_temp",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x37", #base sensor number
             "4", #releate sensor list size
@@ -1204,7 +1200,7 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_3':
         [
-            "/org/openbmc/sensors/gpu/gpu_mem_temp",
+            "/tmp/gpu/gpu%d_mem_temp",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x62", #base sensor number
             "8", #releate sensor list size
@@ -1220,29 +1216,13 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_4':
         [
-            "/org/openbmc/sensors/temperature/FPGA1_TMP",
-            "SensorNumberList", #notfity following setting about SensorNumberList
-            "0x74", #base sensor number
-            "1", #releate sensor list size
-        ],
-#Profile #5 Storey Peak sensor, Treal
-    'CLOSE_LOOP_PARAM_5' :
-        [
-            '0.35',
-            '-0.015',
-            '0.4',
-            '75',
-            '86',
-        ],
-    'CLOSE_LOOP_GROUPS_5':
-        [
-            "/org/openbmc/sensors/temperature/FPGA2_TMP",
+            "/sys/class/hwmon/hwmon12/temp2_input",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x75", #base sensor number
             "1", #releate sensor list size
         ],
 #Profile #6 AVA card sensor, Treal
-    'CLOSE_LOOP_PARAM_6' :
+    'CLOSE_LOOP_PARAM_5' :
         [
             '0.35',
             '-0.015',
@@ -1250,9 +1230,9 @@ FAN_ALGORITHM_CONFIG = {
             '64',
             '78',
         ],
-    'CLOSE_LOOP_GROUPS_6':
+    'CLOSE_LOOP_GROUPS_5':
         [
-            "/org/openbmc/sensors/M2/M2_TMP",
+            "/tmp/pcie/mdot2_%d_temp",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x70", #base sensor number
             "4", #releate sensor list size

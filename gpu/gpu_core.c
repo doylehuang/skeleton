@@ -353,7 +353,7 @@ void gpu_data_scan()
 		for(i=0; i<MAX_GPU_NUM; i++) {
 			function_get_gpu_data(i);
 		}
-		usleep(10*1000);
+		usleep(500*1000);
 		notify_device_ready("/org/openbmc/sensors/gpu/gpu_temp");
 	}
 }

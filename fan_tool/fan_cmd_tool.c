@@ -13,6 +13,8 @@
 
 #define FAN_SHM_KEY  (4320)
 #define FAN_SHM_PATH "skeleton/fan_algorithm2"
+#define MAX_CLOSELOOP_SENSOR_NUM (8)
+#define MAX_CLOSELOOP_PROFILE_NUM (8)
 
 
 struct st_fan_closeloop_par {
@@ -28,16 +30,15 @@ struct st_fan_closeloop_par {
 
 	double current_fanspeed;
 	int total_integral_error;
-	int cur_interal_Err;
-	int last_interal_error;
-	int groups_sensor_reading[10];
+	int cur_integral_Err;
+	int last_integral_error;
+	int groups_sensor_reading[MAX_CLOSELOOP_SENSOR_NUM];
 };
-
 
 struct st_fan_parameter {
 	int flag_closeloop; //0: init ; 1:do nothing ; 2: changed; 3:lock waiting
 	int closeloop_count;
-	struct st_fan_closeloop_par closeloop_param[8];
+	struct st_fan_closeloop_par closeloop_param[MAX_CLOSELOOP_PROFILE_NUM];
 
 	int flag_openloop; //0: init ; 1:do nothing ; 2: changed; 3:lock waiting
 	float g_ParamA;
@@ -356,7 +357,7 @@ main(int argc, char * const argv[])
 			printf("Closeloop Info %d, sensor_reading,%d, kp,%f, Ki,%f, Kd,%f, target,%d, pid_value,%f, closeloop speed,%f, current fan speed,%f , total_error,%d, current_error,%d , last_error:%d \n",
 		    	   i, closeloop->closeloop_sensor_reading, closeloop->Kp, closeloop->Ki, closeloop->Kd,closeloop->sensor_tracking,
 		    	   closeloop->pid_value, closeloop->closeloop_speed, 
-		    	   closeloop->current_fanspeed, closeloop->total_integral_error, closeloop->cur_interal_Err, closeloop->last_interal_error);
+		    	   closeloop->current_fanspeed, closeloop->total_integral_error, closeloop->cur_integral_Err, closeloop->last_integral_error);
 
 		}
 		print_datetime();

@@ -588,7 +588,7 @@ void pex_data_scan()
 			function_get_pex_serial_data(i);
 			function_get_pex_udid_data(i);
 		}
-		usleep(10*1000);
+		usleep(500*1000);
 		notify_device_ready("/org/openbmc/sensors/pex/pex");
 	}
 }
