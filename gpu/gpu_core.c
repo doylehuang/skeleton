@@ -191,7 +191,7 @@ static int function_get_gpu_info(int index)
 
 int access_gpu_data(int index, unsigned char* writebuf, unsigned char* readbuf)
 {
-	int retry_temp = 5;
+	int retry_temp = 20;
 	int rc;
 	while(retry_temp >= 0) {
 		int flag_temp = 1;

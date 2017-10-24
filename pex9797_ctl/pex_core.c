@@ -268,7 +268,16 @@ double pow(double n, double p)
 double calculate_pex_temp(unsigned int N)
 {
 	double result = 0.0;
+	static double result_record = 0.0;
 	result = (-4.5636)*pow(E, -11)*pow(N,4) + (1.4331)*pow(E, -7)*pow(N,3) + (-2.3557)*pow(E, -4)*pow(N,2) + (0.32597*N) + (-53.509);
+
+	if (result<=255 && result >= -1)
+	{
+		result_record = result;
+	}
+	else
+		result = result_record;
+
 	return result;
 
 }
@@ -290,6 +299,20 @@ void write_file_pex(int pex_idx, double data, char *sub_name)
 {
 	char f_path[128];
 	char sys_cmd[256];
+	static int retry= 20;
+	static double prev_data = 0.0;
+
+	if (data > 0) {
+		prev_data = data;
+		retry = 20;
+	} else {
+		if (retry > 0)
+		{
+			data = prev_data;
+		}
+		retry-=1;
+	}
+	
 
 	sprintf(f_path, "%s/pex%d_%s", PEX_TEMP_PATH, pex_idx, sub_name);
 	sprintf(sys_cmd, "echo %d > %s", (int)data, f_path);
