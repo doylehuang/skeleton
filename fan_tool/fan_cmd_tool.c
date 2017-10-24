@@ -9,6 +9,7 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #define FAN_SHM_KEY  (4320)
 #define FAN_SHM_PATH "skeleton/fan_algorithm2"
@@ -80,6 +81,8 @@ void usage(const char *prog)
 	       "\t\t\t -c : ParamC\n"
 	       "\t\t\t -l : LowAmb\n"
 	       "\t\t\t -u : UperAmb\n"
+	       "\t\t\t -L : LowSpeed\n"
+	       "\t\t\t -U : HighSpeed\n"
 	       "\t\t\t -o : Offset\n"
 	       "\t\t pwm parameters setting:\n"
 	       "\t\t\t -s : set max fan speed\n"
@@ -98,36 +101,67 @@ void usage(const char *prog)
 	      );
 }
 
-int read_file(char *path)
+
+int do_read_file(char *path)
 {
-	FILE *fp1 = fopen(path,"r");
-	int val;
-	if(fp1 == NULL) 
+	FILE *fp1 = NULL;
+	int retry = 10;
+	int i;
+	int val = 0;
+	for (i =0 ; i<retry; i++)
+	{
+		fp1= fopen(path,"r");
+		if(fp1 != NULL)
+			break;
+	}
+	if ( i == retry) {
+		//printf("====> read_file fail  with %s\n", path);
 		return -1;
+	}
 	fscanf(fp1, "%d", &val);
 	if (val < 0)
 		val = 0;
-	fflush(fp1);
 	fclose(fp1);
 	return val;
 }
 
+int read_file(char *path)
+{
+	int i ;
+	int retry = 50;
+	int rc;
+
+	for (i = 0 ; i<retry ; i++)
+	{
+		rc = do_read_file(path);
+		if (rc > 0)
+			return rc;
+	}
+	return rc;
+}
+
+void print_datetime()
+{
+	time_t t = time(NULL);
+	struct tm tm = *localtime(&t);
+	printf("%d-%d-%d %d:%d:%d, ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+}
 void show_gpu_sensor_temp(void)
 {
 	int i = 1;
 	char path[100];
 	int val;
 	int val_mem;
-	printf("\n==== GPU SENSOR TEMP LIST=======\n");
+	printf("\n");
+	print_datetime();
+	printf("==== GPU SENSOR TEMP LIST=======\n");
 	for (i = 1; i<=8;i++)
 	{
-		sprintf(path, "/tmp/gpu/gpu%d_temp", i);
-		val = read_file(path);
 
-		sprintf(path, "/tmp/gpu/gpu%d_mem_temp", i);
-		val_mem = read_file(path);
-
-		printf("GPU %d temp:%d ; memory temp:%d\n", i, val, val_mem);
+		val = g_fan_para_shm->closeloop_param[0].groups_sensor_reading[i-1];
+		val_mem = g_fan_para_shm->closeloop_param[2].groups_sensor_reading[i-1];
+		print_datetime();
+		printf("GPU %d, temp,%d , memory temp,%d\n", i, val, val_mem);
 	}
 }
 
@@ -137,15 +171,35 @@ void show_fio_sensor_temp(void)
 	int i = 1;
 	char path[100];
 	int val_fio_1, val_fio_2;
-	printf("\n==== FIO SENSOR TEMP LIST=======\n");
+	printf("\n");
+	print_datetime();
+	printf("==== FIO SENSOR TEMP LIST=======\n");
 	val_fio_1 = read_file("/sys/class/hwmon/hwmon1/temp1_input");
 	val_fio_2 = read_file("/sys/class/hwmon/hwmon2/temp1_input");
-
-	printf("FIO Temp: [%.2f  ,  %.2f]\n\n", 
+	print_datetime();
+	printf("FIO Temp, %.2f  ,  %.2f,\n", 
 		(double) val_fio_1/1000,
 		(double) val_fio_2/1000);
 }
 
+void show_fan_tacho_rpm(void)
+{
+	int i = 1;
+	char path[100];
+	int fan_tacho;
+	printf("\n");
+	print_datetime();
+	printf("==== Fan Tacho RPM LIST=======\n");
+
+	for (i = 1; i<=12; i++)
+	{
+		path[0] = 0;
+		sprintf(path, "/sys/devices/platform/ast_pwm_tacho.0/tacho%d_rpm", i);
+		fan_tacho = read_file(path);
+		print_datetime();
+		printf("Fan Tacho %d,%d\n", i, fan_tacho);
+	}	
+}
 
 int
 main(int argc, char * const argv[])
@@ -159,6 +213,7 @@ main(int argc, char * const argv[])
 	int flag_wr = 0; //0: read fan parameters; 1:write fan parameters
 	int closeloop_index = 0;
 	struct st_fan_closeloop_par *closeloop;
+	int timedelay = 0;
 
 	struct st_fan_parameter fan_p;
 	fan_p.closeloop_param[0].Kp = UNKNOW_VALUE;
@@ -171,12 +226,14 @@ main(int argc, char * const argv[])
 	fan_p.g_ParamC = UNKNOW_VALUE;
 	fan_p.g_LowAmb = UNKNOW_VALUE;
 	fan_p.g_UpAmb = UNKNOW_VALUE;
+	fan_p.g_LowSpeed = UNKNOW_VALUE;
+	fan_p.g_HighSpeed = UNKNOW_VALUE;
 	fan_p.openloop_sensor_offset = UNKNOW_VALUE;
 	fan_p.max_fanspeed = UNKNOW_VALUE;
 	fan_p.min_fanspeed = UNKNOW_VALUE;
 	fan_p.debug_msg_info_en = UNKNOW_VALUE;
 
-	while ((opt = getopt(argc, argv, "hwrp:i:d:t:a:b:c:l:u:s:m:n:e:o:g:")) != -1) {
+	while ((opt = getopt(argc, argv, "hwrp:i:d:t:a:b:c:l:u:s:m:n:e:o:g:L:U:T:")) != -1) {
 		switch (opt) {
 		case 'h':
 			usage(argv[0]);
@@ -236,6 +293,15 @@ main(int argc, char * const argv[])
 		case 'g':
 			fan_p.debug_msg_info_en =atoi(optarg);
 			break;
+		case 'L':
+			fan_p.g_LowSpeed =  atoi(optarg);
+			break;
+		case 'U':
+			fan_p.g_HighSpeed =  atoi(optarg);
+			break;
+		case 'T':
+			timedelay =  atoi(optarg);
+			break;
 		default:
 			usage(argv[0]);
 			return -1;
@@ -261,22 +327,56 @@ main(int argc, char * const argv[])
 
 
 	if (flag_wr == 0) {
+	do {
 		for (i = 0 ; i<g_fan_para_shm->closeloop_count; i++)
 		{
 			closeloop = &(g_fan_para_shm->closeloop_param[i]);
-			printf("[Closeloop Info %d] sensor_reading:%d, kp:%f, Ki:%f, Kd:%f, target:%d, pid_value:%f, closeloop speed:%f\n",
+			print_datetime();
+			switch(i)
+			{
+				case 0:
+					printf(" GPU sensor, ");
+					break;
+				case 1:
+					printf(" PEX9797 sensor, ");
+					break;
+				case 2:
+					printf(" HBM (GPU Memory) sensor, ");
+					break;
+				case 3:
+					printf(" FPGA sensor, ");
+					break;
+				case 4:
+					printf(" AVA card sensor, ");
+					break;
+				default:
+					break;
+			}
+			
+			printf("Closeloop Info %d, sensor_reading,%d, kp,%f, Ki,%f, Kd,%f, target,%d, pid_value,%f, closeloop speed,%f, current fan speed,%f , total_error,%d, current_error,%d , last_error:%d \n",
 		    	   i, closeloop->closeloop_sensor_reading, closeloop->Kp, closeloop->Ki, closeloop->Kd,closeloop->sensor_tracking,
-		    	   closeloop->pid_value, closeloop->closeloop_speed);
+		    	   closeloop->pid_value, closeloop->closeloop_speed, 
+		    	   closeloop->current_fanspeed, closeloop->total_integral_error, closeloop->cur_interal_Err, closeloop->last_interal_error);
 
 		}
-		printf("[Openloop Info] sensor_reading:%f , sensor_reading_offset:%d openloop speed:%d\n",
-		       g_fan_para_shm->openloop_sensor_reading, g_fan_para_shm->openloop_sensor_offset ,  g_fan_para_shm->openloop_speed);
+		print_datetime();
+		printf("Openloop Info, sensor_reading,%f , sensor_reading_offset,%d , a,%f ,b,%f ,c,%f ,LowAmb,%d ,UpAmb,%d ,LowSpeed,%d ,HighSpeed,%d ,openloop speed,%d\n",
+		       g_fan_para_shm->openloop_sensor_reading, g_fan_para_shm->openloop_sensor_offset ,  
+		       g_fan_para_shm->g_ParamA, g_fan_para_shm->g_ParamB, g_fan_para_shm->g_ParamC,
+		       g_fan_para_shm->g_LowAmb, g_fan_para_shm->g_UpAmb,  g_fan_para_shm->g_LowSpeed, g_fan_para_shm->g_HighSpeed,
+		       g_fan_para_shm->openloop_speed);
 
-		printf("[PWM Info] current fan speed:%d (%d~%d)\n",
+		print_datetime();
+		printf("PWM Info, current fan speed,%d (%d~%d)\n",
 		       g_fan_para_shm->current_speed, g_fan_para_shm->min_fanspeed, g_fan_para_shm->max_fanspeed);
 
 		show_gpu_sensor_temp();
 		show_fio_sensor_temp();
+        show_fan_tacho_rpm();
+        printf("\n");
+		if (timedelay > 0)
+			usleep(timedelay);
+	}while (timedelay>0);
 	} else if (flag_wr == 1) {
 		if (fan_p.closeloop_param[0].Kp!=UNKNOW_VALUE || fan_p.closeloop_param[0].Ki!=UNKNOW_VALUE || fan_p.closeloop_param[0].Kd!=UNKNOW_VALUE || fan_p.closeloop_param[0].sensor_tracking!=UNKNOW_VALUE || fan_p.closeloop_param[0].sample_n != UNKNOW_VALUE) {
 			g_fan_para_shm->flag_closeloop = 3; //block wait
@@ -307,7 +407,7 @@ main(int argc, char * const argv[])
 			g_fan_para_shm->flag_closeloop = 2; //fan closeloop parameter changed
 		}
 
-		if (fan_p.g_ParamA!=UNKNOW_VALUE || fan_p.g_ParamB!=UNKNOW_VALUE || fan_p.g_ParamC!=UNKNOW_VALUE || fan_p.g_LowAmb!=UNKNOW_VALUE || fan_p.g_UpAmb!=UNKNOW_VALUE || fan_p.openloop_sensor_offset!=UNKNOW_VALUE) {
+		if (fan_p.g_ParamA!=UNKNOW_VALUE || fan_p.g_ParamB!=UNKNOW_VALUE || fan_p.g_ParamC!=UNKNOW_VALUE || fan_p.g_LowAmb!=UNKNOW_VALUE || fan_p.g_UpAmb!=UNKNOW_VALUE || fan_p.openloop_sensor_offset!=UNKNOW_VALUE ||  fan_p.g_LowSpeed!=UNKNOW_VALUE || fan_p.g_HighSpeed!=UNKNOW_VALUE) {
 			g_fan_para_shm->flag_openloop = 3; //block wait
 
 			if (fan_p.g_ParamA != UNKNOW_VALUE) {
@@ -333,6 +433,14 @@ main(int argc, char * const argv[])
 			if (fan_p.openloop_sensor_offset!=UNKNOW_VALUE) {
 				printf("[Openloop]openloop_sensor_offset changed: %d --> %d\n", g_fan_para_shm->openloop_sensor_offset, fan_p.openloop_sensor_offset);
 				g_fan_para_shm->openloop_sensor_offset = fan_p.openloop_sensor_offset;
+			}
+			if (fan_p.g_LowSpeed!=UNKNOW_VALUE) {
+				printf("[Openloop]g_LowSpeed changed: %d --> %d\n", g_fan_para_shm->g_LowSpeed, fan_p.g_LowSpeed);
+				g_fan_para_shm->g_LowSpeed = fan_p.g_LowSpeed;
+			}
+			if (fan_p.g_HighSpeed!=UNKNOW_VALUE) {
+				printf("[Openloop]g_HighSpeed changed: %d --> %d\n", g_fan_para_shm->g_HighSpeed, fan_p.g_HighSpeed);
+				g_fan_para_shm->g_HighSpeed = fan_p.g_HighSpeed;
 			}
 
 			g_fan_para_shm->flag_openloop = 2; //fan openloop parameter changed
