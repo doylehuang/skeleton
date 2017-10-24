@@ -349,7 +349,6 @@ int function_get_pex_temp_data(int pex_idx)
 
 	temp_sensor_data = get_temperature_sensor_data(rx_len, rx_data);
 	real_temp_data = calculate_pex_temp(temp_sensor_data);
-	write_file_pex(pex_idx, real_temp_data, "temp");
 
 	if ((int) real_temp_data >= 0)
 		rc = 0;
@@ -566,7 +565,7 @@ void pex_data_scan()
 			function_get_pex_serial_data(i);
 			function_get_pex_udid_data(i);
 		}
-		sleep(1);
+		usleep(10*1000);
 		notify_device_ready("/org/openbmc/sensors/pex/pex");
 	}
 }
