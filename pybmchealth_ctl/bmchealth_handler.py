@@ -493,10 +493,13 @@ def watch_redfish():
             except:
                 flag_redfish_start = 0
     if flag_redfish_start != 0 and os.path.exists(watchdog_file_path):
-        cmd = 'netstat -nl | grep ":443 "'
-        cmd_msg = subprocess.check_output(cmd, shell=True)
-        if len(cmd_msg) > 0:
-            os.remove(watchdog_file_path)
+        try:
+            cmd = 'netstat -nl | grep ":443 "'
+            cmd_msg = subprocess.check_output(cmd, shell=True)
+            if len(cmd_msg) > 0:
+                os.remove(watchdog_file_path)
+        except:
+            pass
     return True
 
 def watch_event_service():
