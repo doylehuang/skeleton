@@ -58,7 +58,7 @@ def writeMAC(macaddr):
   f.seek(g_mac_offset,0)
   f.write(data)
   f.seek(g_mac_offset+len(data), 0)
-  f.write(str(checksum))
+  f.write(chr(checksum))
   f.close()
   print "Done."
 
@@ -75,7 +75,7 @@ def writeGUID():
   f.seek(g_guid_offset, 0)
   f.write(data)
   f.seek(g_guid_offset+len(data), 0)
-  f.write(str(checksum))
+  f.write(chr(checksum))
   f.close()
   print "Done."
 
