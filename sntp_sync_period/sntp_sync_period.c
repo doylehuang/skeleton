@@ -73,7 +73,7 @@ int sntp_sync()
                     printf("Synced with NTP server\n");
                     event_dir_type = (EVENT_DIR_ASSERT << 7) | NTP_EVENT_TYPE;
                     evd1 = EVD_SYNC_TIME;
-                    sprintf(cmd, "/usr/sbin/eventctl.exe add OK 0x%x 0x%x 0x%x 0x%x", NTP_SENSOR_TYPE, NTP_SENSOR_NUM, \
+                    sprintf(cmd, "/usr/sbin/eventctl.exe add Info 0x%x 0x%x 0x%x 0x%x", NTP_SENSOR_TYPE, NTP_SENSOR_NUM, \
                         event_dir_type, evd1);
                     system(cmd);
                 }
