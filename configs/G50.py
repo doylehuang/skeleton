@@ -43,10 +43,10 @@ SYSTEM_STATES = [
 
 EXIT_STATE_DEPEND = {
     'BASE_APPS' : {
-        '/org/openbmc/sensors': 0,
     },
     'BMC_STARTING' : {
         '/org/openbmc/inventory/system/chassis/io_board' : 0,
+        '/org/openbmc/sensors': 0,
     },
     'BMC_STARTING2' : {
         '/org/openbmc/control/chassis0': 0,
