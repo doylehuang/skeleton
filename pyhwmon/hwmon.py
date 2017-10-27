@@ -24,6 +24,8 @@ from time import sleep
 import property_file_ctl
 from bmchealth_handler import watch_redfish, watch_event_service
 from sensor_manager2 import *
+import conque_sole_shared_memory as ShareMemory
+g_share_table = {}
 
 SENSOR_BUS = 'org.openbmc.Sensors'
 # sensors include /org/openbmc/sensors and /org/openbmc/control
@@ -425,6 +427,7 @@ class Hwmons(SensorManager):
 		return True
 
 	def check_pmbus_state(self, objpath, hwmons):
+		global g_share_table
 		for hwmon in hwmons:
 			try:
 				if 'bus_number' in hwmon:
@@ -435,8 +438,8 @@ class Hwmons(SensorManager):
 				attribute = hwmon_path
 				evd1 = 0xA0
 				if 'firmware_update' in hwmon:
-					firmware_update_status = property_file_ctl.GetProperty(objpath, 'firmware_update')
-					if (firmware_update_status & (1 << (hwmon['index'] - 1))) > 0:
+					firmware_update_status = g_share_table[objpath].read()
+					if (int(firmware_update_status) & (1 << (hwmon['index'] - 1))) > 0:
 						return True
 				if attribute:
 					raw_value = int(self.readAttribute(attribute), 16)
@@ -527,6 +530,7 @@ class Hwmons(SensorManager):
 			pass
 
 	def sensor_polling(self, sensor_list):
+		global g_share_table
 		global pre_pgood
 		for sensor_set in sensor_list:
 			objpath = sensor_set[0]
@@ -571,8 +575,8 @@ class Hwmons(SensorManager):
 							print 'Get power good status failure'
 
 					if 'firmware_update' in hwmon:
-						firmware_update_status = property_file_ctl.GetProperty(objpath, 'firmware_update')
-						if (firmware_update_status & (1 << (hwmon['index'] - 1))) > 0:
+						firmware_update_status = g_share_table[objpath].read()
+						if (int(firmware_update_status) & (1 << (hwmon['index'] - 1))) > 0:
 							continue
 					if 'sensornumber' in hwmon:
 						READING_VALUE = 'reading_value_'+str(hwmon['sensornumber'])
@@ -674,6 +678,7 @@ class Hwmons(SensorManager):
 		return True
 
 	def poll(self,objpath,attribute,hwmon):
+		global g_share_table
 		self.kickWatchdog()
 		try:
 			standby_monitor = True
@@ -696,7 +701,8 @@ class Hwmons(SensorManager):
 					return True
 
 			if 'firmware_update' in hwmon:
-				if property_file_ctl.GetProperty(objpath, 'firmware_update') == 1:
+				firmware_update_status = g_share_table[objpath].read()
+				if int(firmware_update_status) == 1:
 					return True
 
 			raw_value = int(self.readAttribute(attribute))
@@ -887,7 +893,9 @@ class Hwmons(SensorManager):
 									g_share_table[objpath+'value_'+str(hwmon['sensornumber'])].create(objpath, 'value_'+str(hwmon['sensornumber']))
 								if (IFACE_MAPPING.has_key(prop)):
 									if prop == 'firmware_update':
-										property_file_ctl.SetProperty(objpath, prop, hwmon[prop])
+										if objpath not in g_share_table:
+											g_share_table[objpath] = ShareMemory.ConqueSoleSharedMemory()
+											g_share_table[objpath].create(objpath, prop)
 									else:
 										self.objects[objpath].Set(IFACE_MAPPING[prop],prop+'_'+str(hwmon['sensornumber']),hwmon[prop])
 							self.sensors[hwmon['sensornumber']]=True
