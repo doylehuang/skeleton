@@ -1164,10 +1164,11 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_1':
         [
-            "/tmp/gpu/gpu%d_temp",
+            "/org/openbmc/sensors/gpu/gpu_temp",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x41", #base sensor number
             "8", #releate sensor list size
+            "1", #notify share memory path
         ],
 #Profile #3 PEX9797 1~4, Treal
     'CLOSE_LOOP_PARAM_2' :
@@ -1180,10 +1181,11 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_2':
         [
-            "/tmp/pex/pex%d_temp",
+            "/org/openbmc/sensors/pex/pex",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x37", #base sensor number
             "4", #releate sensor list size
+            "1", #notify share memory path
         ],
 #Profile #4 HBM1~8, Treal
     'CLOSE_LOOP_PARAM_3' :
@@ -1196,10 +1198,11 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_3':
         [
-            "/tmp/gpu/gpu%d_mem_temp",
+            "/org/openbmc/sensors/gpu/gpu_mem_temp",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x62", #base sensor number
             "8", #releate sensor list size
+            "1", #notify share memory path
         ],
 #Profile #5 Storey Peak sensor, Treal
     'CLOSE_LOOP_PARAM_4' :
@@ -1228,10 +1231,11 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_5':
         [
-            "/tmp/pcie/mdot2_%d_temp",
+            "/org/openbmc/sensors/M2/M2_TMP",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x70", #base sensor number
             "4", #releate sensor list size
+            "1", #notify share memory path
         ],
 
     'FAN_LED_OFF': ["0xFF"],
