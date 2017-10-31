@@ -89,29 +89,6 @@ void init_gpu_gpio()
     }
 }
 
-void read_psu_info(int bus_no)
-{
-    char buff_path[256] = "";
-    /*read Model*/
-    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x9a -r 32 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
-    system(buff_path);
-    /*read serial_number*/
-    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x9e -r 16 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
-    system(buff_path);
-    /*read manufacturer_name*/
-    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x99 -r 32 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
-    system(buff_path);
-    /*read firmware_version*/
-    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0xd5 -r 9 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
-    system(buff_path);
-    /*read part number*/
-    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0x9c -r 32 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
-    system(buff_path);
-    /*read POUT MAX*/
-    sprintf(buff_path, "i2craw.exe %d 0x58 -w 0xa7 -r 3 | tail -n 1 >> /tmp/psu_%d", bus_no, bus_no-PHYSICAL_I2C);
-    system(buff_path);
-}
-
 int
 main(int argc, char *argv[])
 {
@@ -128,8 +105,6 @@ main(int argc, char *argv[])
 	    sprintf(buff_path, "i2craw.exe %d 0x58 -w \"0x05 0x04 0x01 0x1b 0x7c 0xff\"", PHYSICAL_I2C+i);
 	    printf("%s\n", buff_path);
 	    system(buff_path);
-
-	    read_psu_info(PHYSICAL_I2C+i);
 
 	    /* Add new pmbus device */
         sprintf(buff_path, "echo pmbus 0x58 > /sys/bus/i2c/devices/i2c-%d/new_device", PHYSICAL_I2C+i);

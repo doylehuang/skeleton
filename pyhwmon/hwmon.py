@@ -250,8 +250,6 @@ class Hwmons(SensorManager):
 						data={'event_status':0xC4, 'sensor_number':hwmon['sensornumber']} ,\
 						sensortype=sensortype, sensor_number=sensor_number)
 				self.objects[check_subsystem_health_obj_path].Set(SensorValue.IFACE_NAME, 'value', 1)
-				if hwmon.has_key('firmware_update'):
-					self.read_psu_info(hwmon['index'])
 				self.check_subsystem_health[hwmon['sensornumber']] = 0
 			elif raw_value >= 0:
 				if self.check_subsystem_health[hwmon['sensornumber']] == 0:
@@ -262,32 +260,7 @@ class Hwmons(SensorManager):
 						data={'event_status':0xC4, 'sensor_number':hwmon['sensornumber']},\
 						sensortype=sensortype, sensor_number=sensor_number)
 					self.objects[check_subsystem_health_obj_path].Set(SensorValue.IFACE_NAME, 'value', 0)
-					if hwmon.has_key('firmware_update'):
-						self.read_psu_info(hwmon['index'])
 				self.check_subsystem_health[hwmon['sensornumber']] = 1
-		return True
-
-	def read_psu_info(self, psu_index):
-		psu_info_path = "/tmp/psu_"+str(psu_index)
-		if os.path.exists(psu_info_path):
-			os.remove(psu_info_path)
-		try:
-			delete_command = "echo 0x58 > /sys/bus/i2c/devices/i2c-"+str(psu_index+7)+"/delete_device"
-			subprocess.check_output(delete_command, shell=True)
-			read_Model_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x9a -r 32 | tail -n 1 >> "+str(psu_info_path)
-			subprocess.check_output(read_Model_command, shell=True)
-			read_srial_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x9e -r 16 | tail -n 1 >> "+str(psu_info_path)
-			subprocess.check_output(read_srial_command, shell=True)
-			read_manufacturer_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x99 -r 32 | tail -n 1 >> "+str(psu_info_path)
-			subprocess.check_output(read_manufacturer_command, shell=True)
-			read_firmware_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0xd5 -r 9 | tail -n 1 >> "+str(psu_info_path)
-			subprocess.check_output(read_firmware_command, shell=True)
-			read_PN_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0x9c -r 32 | tail -n 1 >> "+str(psu_info_path)
-			subprocess.check_output(read_PN_command, shell=True)
-			read_POUT_command = "i2craw.exe " + str(psu_index+7) +" 0x58 -w 0xa7 -r 3 | tail -n 1 >> "+str(psu_info_path)
-			subprocess.check_output(read_POUT_command, shell=True)
-		except Exception as e:
-			print str(e)
 		return True
 
 	def check_throttle_state(self, objpath, attribute, hwmon):
