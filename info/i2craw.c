@@ -41,6 +41,8 @@ void usage(const char *prog) {
          "\t\t Use PEC\n"
          "\n\t-h:\n"
          "\t\t Print this help\n"
+         "\n\t-f:\n"
+         "\t\t Use FORCE\n"
          "\n  Note: if both '-w' and '-r' are specified, write will be"
          "\n        performed first, followed by read\n");
 }
@@ -59,6 +61,7 @@ int g_n_read = -1;
 uint8_t g_read_bytes[MAX_BYTES];
 uint8_t g_bus = -1;
 uint8_t g_slave_addr = 0xff;
+int g_use_force = 0;
 
 static int parse_byte_string(const char *str) {
   const char *startptr = str;
@@ -101,8 +104,10 @@ static int i2c_open() {
     LOG_ERR(errno, "Failed to open i2c device %s", fn);
     return -1;
   }
-
-  rc = ioctl(fd, I2C_SLAVE, g_slave_addr);
+  if (g_use_force == 1)
+    rc = ioctl(fd, I2C_SLAVE_FORCE, g_slave_addr);
+  else if (g_use_force == 0)
+    rc = ioctl(fd, I2C_SLAVE, g_slave_addr);
   if (rc < 0) {
     LOG_ERR(errno, "Failed to open slave @ address 0x%x", g_slave_addr);
     close(fd);
@@ -163,13 +168,16 @@ int main(int argc, char * const argv[]) {
   int i;
   int fd;
   int opt;
-  while ((opt = getopt(argc, argv, "hpw:r:")) != -1) {
+  while ((opt = getopt(argc, argv, "hpfw:r:")) != -1) {
     switch (opt) {
     case 'h':
       usage(argv[0]);
       return 0;
     case 'p':
       g_use_pec = 1;
+      break;
+    case 'f':
+      g_use_force = 1;
       break;
     case 'w':
       g_has_write = 1;
