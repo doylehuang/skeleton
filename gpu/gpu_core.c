@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sdbus_property.h>
+#include <sys/mman.h>
 
 #define MAX_I2C_DEV_LEN 32
 #define MBT_REG_CMD            0x5c
@@ -25,12 +26,37 @@
 #define TYPE_PART_NUMBER 0x4
 #define TYPE_FIRMWARE_VERSION 0x8
 
-#define GPU_TEMP_PATH "/tmp/gpu"
+#define GPU_TEMP_PATH "/run/obmc/sharememory/org/openbmc/sensors/gpu/gpu_temp"
+#define GPU_MEM_TEMP_PATH "/run/obmc/sharememory/org/openbmc/sensors/gpu/gpu_mem_temp"
+
 
 
 #define MAX_GPU_NUM (8)
 #define MAX_INFO_INDEX 16
 #define MAX_INFO_LENGTH 64
+
+#define PATH_MAX_STRING_SIZE 256
+#define FILE_LENGTH 0x10
+#define PEX_TEMP_DEFAULT -1
+#define PEX_TEMP_MAX 255
+void *map_memory_gpu[MAX_GPU_NUM];
+void *map_memory_gpu_mem[MAX_GPU_NUM];
+
+enum {
+	SHARE_MEMORY_GPU = 0,
+	SHARE_MEMORY_GPU_MEMORY,
+};
+
+enum {
+	GPU_MEM_TEMP_1 = 0x62,
+	GPU_MEM_TEMP_2,
+	GPU_MEM_TEMP_3,
+	GPU_MEM_TEMP_4,
+	GPU_MEM_TEMP_5,
+	GPU_MEM_TEMP_6,
+	GPU_MEM_TEMP_7,
+	GPU_MEM_TEMP_8,
+};
 
 enum {
 	EM_GPU_DEVICE_1 = 0,
@@ -94,6 +120,82 @@ gpu_device_mapping gpu_device_bus[MAX_GPU_NUM] = {
 	{38, 0x4d, EM_GPU_DEVICE_7, 0x47},
 	{39, 0x4d, EM_GPU_DEVICE_8, 0x48},
 };
+
+int mkdir_p(const char *dir, const mode_t mode) {
+    char tmp[PATH_MAX_STRING_SIZE];
+    char *p = NULL;
+    struct stat sb;
+    size_t len;
+
+    /* copy path */
+    strncpy(tmp, dir, sizeof(tmp));
+    len = strlen(tmp);
+    if (len >= sizeof(tmp)) {
+        return -1;
+    }
+
+    /* remove trailing slash */
+    if(tmp[len - 1] == '/') {
+        tmp[len - 1] = 0;
+    }
+
+    /* recursive mkdir */
+    for(p = tmp + 1; *p; p++) {
+        if(*p == '/') {
+            *p = 0;
+            /* test path */
+            if (stat(tmp, &sb) != 0) {
+                /* path does not exist - create directory */
+                if (mkdir(tmp, mode) < 0) {
+                    return -1;
+                }
+            } else if (!S_ISDIR(sb.st_mode)) {
+                /* not a directory */
+                return -1;
+            }
+            *p = '/';
+        }
+    }
+    /* test path */
+    if (stat(tmp, &sb) != 0) {
+        /* path does not exist - create directory */
+        if (mkdir(tmp, mode) < 0) {
+            return -1;
+        }
+    } else if (!S_ISDIR(sb.st_mode)) {
+        /* not a directory */
+        return -1;
+    }
+    return 0;
+}
+
+void create_sharememory(int index, int type)
+{
+	int fp_share_memory;
+	char f_path[128];
+
+	if(type == SHARE_MEMORY_GPU){
+		sprintf(f_path , "%s%s%s%d", GPU_TEMP_PATH, "/", "value_", gpu_device_bus[index].sensor_number);
+	}else if(type == SHARE_MEMORY_GPU_MEMORY){
+		sprintf(f_path , "%s%s%s%d", GPU_MEM_TEMP_PATH, "/", "value_", GPU_MEM_TEMP_1 + index);
+	}
+
+	/* Open a file to be mapped. */
+	fp_share_memory = open(f_path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+	lseek(fp_share_memory, 0, SEEK_SET);
+	write(fp_share_memory, "-1", sizeof(PEX_TEMP_DEFAULT));
+	lseek(fp_share_memory, 0, SEEK_SET);
+
+	/* Create map memory. */
+	if(type == SHARE_MEMORY_GPU){
+		map_memory_gpu[index] = mmap(0, FILE_LENGTH, PROT_WRITE, MAP_SHARED, fp_share_memory, 0);
+	}else if(type == SHARE_MEMORY_GPU_MEMORY){
+		map_memory_gpu_mem[index] = mmap(0, FILE_LENGTH, PROT_WRITE, MAP_SHARED, fp_share_memory, 0);
+	}
+
+	close(fp_share_memory);
+}
+
 
 static int internal_gpu_access(int bus, __u8 slave,__u8 *write_buf, __u8 *read_buf, int flag)
 {
@@ -224,6 +326,7 @@ int function_get_gpu_data(int index)
 	int len=0;
 	int i=0;
 	FILE *fp;
+	char temperautur_str[FILE_LENGTH];
 	/*get gpu temp data*/
 	rc = access_gpu_data(index, temp_writebuf, readbuf);
 	if(rc==0) {
@@ -232,30 +335,30 @@ int function_get_gpu_data(int index)
 		G_gpu_data[gpu_device_bus[index].device_index].temp = readbuf[1];
 
 		rc = access_gpu_data(index, temp_mem_writebuf, readbuf);
-		sprintf(gpu_path, "%s%s%d%s", GPU_TEMP_PATH, "/gpu", gpu_device_bus[index].device_index+1,"_mem_temp");
+		sprintf(gpu_path, "%s%s%s%d", GPU_MEM_TEMP_PATH, "/", "value_", GPU_MEM_TEMP_1 + index);
 		if (rc == 0) {
 			gpu_mem_temp =  readbuf[1];
-			sprintf(sys_cmd, "echo %d > %s", readbuf[1], gpu_path);
-			system(sys_cmd);
+			sprintf(temperautur_str, "%d", readbuf[1]);
+			sprintf((char *)map_memory_gpu_mem[index], "%s", temperautur_str);
 			G_gpu_data[gpu_device_bus[index].device_index].temp_mem_ready =1;
 		}
 		else
 		{
 			if(G_gpu_data[gpu_device_bus[index].device_index].temp_mem_ready ==1) {
-				sprintf(sys_cmd, "echo %d > %s", rc , gpu_path);
-				system(sys_cmd);
+				sprintf(temperautur_str, "%d", rc);
+				sprintf((char *)map_memory_gpu_mem[index], "%s", temperautur_str);
 			}
 			G_gpu_data[gpu_device_bus[index].device_index].temp_mem_ready =0;
 		}
 		/* write data to file */
-		sprintf(gpu_path, "%s%s%d%s", GPU_TEMP_PATH, "/gpu", gpu_device_bus[index].device_index+1,"_temp");
-		sprintf(sys_cmd, "echo %d > %s", G_gpu_data[gpu_device_bus[index].device_index].temp, gpu_path);
-		system(sys_cmd);
+		sprintf(gpu_path, "%s%s%s%d", GPU_TEMP_PATH, "/", "value_", gpu_device_bus[index].sensor_number);
+		sprintf(temperautur_str, "%d", G_gpu_data[gpu_device_bus[index].device_index].temp);
+		sprintf((char *)map_memory_gpu[index], "%s", temperautur_str);
 	} else {
 		if(G_gpu_data[gpu_device_bus[index].device_index].temp_ready) { /*if previous is ok*/
-			sprintf(gpu_path, "%s%s%d%s", GPU_TEMP_PATH, "/gpu", gpu_device_bus[index].device_index+1,"_temp");
-			sprintf(sys_cmd, "echo %d > %s", rc, gpu_path);
-			system(sys_cmd);
+			sprintf(gpu_path, "%s%s%s%d", GPU_TEMP_PATH, "/", "value_", gpu_device_bus[index].sensor_number);
+			sprintf(temperautur_str, "%d", rc);
+			sprintf((char *)map_memory_gpu[index], "%s", temperautur_str);
 		}
 		G_gpu_data[gpu_device_bus[index].device_index].temp_ready = 0;
 		return rc;
@@ -332,23 +435,55 @@ void gpu_data_scan()
 	/* create the file patch for dbus usage*/
 	/* check if directory is existed */
 	if (stat(GPU_TEMP_PATH, &st) == -1) {
-		mkdir(GPU_TEMP_PATH, 0777);
+		mkdir_p(GPU_TEMP_PATH, 0777);
 	}
 	for(i=0; i<MAX_GPU_NUM; i++) {
-		sprintf(gpu_path, "%s%s%d%s", GPU_TEMP_PATH, "/gpu", i+1,"_temp");
+		sprintf(gpu_path, "%s%s%s%d", GPU_TEMP_PATH, "/", "value_", gpu_device_bus[i].sensor_number);
+		printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 		if( access( gpu_path, F_OK ) != -1 ) {
+			printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 			fprintf(stderr,"Error:[%s] opening:[%s] , existed \n",gpu_path);
+			create_sharememory(i,SHARE_MEMORY_GPU);
 			break;
 		} else {
 			fp = fopen(gpu_path,"w");
 			if(fp == NULL) {
+				printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 				fprintf(stderr,"Error:[%s] opening:[%s]\n",strerror(errno),gpu_path);
 				return;
 			}
-			fprintf(fp, "%d",-1);
+			fprintf(fp, "%d",PEX_TEMP_MAX);
 			fclose(fp);
+			create_sharememory(i,SHARE_MEMORY_GPU);
 		}
 	}
+
+	/* create the file patch for dbus usage*/
+	/* check if directory is existed */
+	if (stat(GPU_MEM_TEMP_PATH, &st) == -1) {
+		mkdir_p(GPU_MEM_TEMP_PATH, 0777);
+	}
+	for(i=0; i<MAX_GPU_NUM; i++) {
+		sprintf(gpu_path, "%s%s%s%d", GPU_MEM_TEMP_PATH, "/", "value_", GPU_MEM_TEMP_1 + i);
+		printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
+		if( access( gpu_path, F_OK ) != -1 ) {
+			printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
+			fprintf(stderr,"Error:[%s] opening:[%s] , existed \n",gpu_path);
+			create_sharememory(i,SHARE_MEMORY_GPU_MEMORY);
+			break;
+		} else {
+			fp = fopen(gpu_path,"w");
+			if(fp == NULL) {
+				printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
+				fprintf(stderr,"Error:[%s] opening:[%s]\n",strerror(errno),gpu_path);
+				return;
+			}
+			fprintf(fp, "%d",PEX_TEMP_MAX);
+			fclose(fp);
+			create_sharememory(i,SHARE_MEMORY_GPU_MEMORY);
+		}
+	}
+
 	while(1) {
 		for(i=0; i<MAX_GPU_NUM; i++) {
 			function_get_gpu_data(i);

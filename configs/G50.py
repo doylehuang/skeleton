@@ -340,7 +340,7 @@ def _add_gpu_temperature_sensor(configs, index, sensornumber):
     config = {
         'critical_upper': 81,
         'positive_hysteresis': 2,
-        'device_node': '/tmp/gpu/gpu%d_temp' % index,
+        'device_node': '/run/obmc/sharememory/org/openbmc/sensors/gpu/gpu_temp/value_%d' % sensornumber,
         'object_path': 'sensors/gpu/gpu_temp',
         'poll_interval': 5000,
         'reading_type': 0x01,
@@ -356,6 +356,7 @@ def _add_gpu_temperature_sensor(configs, index, sensornumber):
         'status_change_count': 0,
         'reading_error_count': 0,
         'ready': 0,
+        'sharememory': True,
         }
     if objpath in configs:
         configs[objpath].append(config)
@@ -368,7 +369,7 @@ def _add_gpu_mem_temperature_sensor(configs, index, sensornumber):
     config = {
         'critical_upper': 85,
         'positive_hysteresis': 2,
-        'device_node': '/tmp/gpu/gpu%d_mem_temp' % index,
+        'device_node': '/run/obmc/sharememory/org/openbmc/sensors/gpu/gpu_mem_temp/value_%d' % sensornumber,
         'object_path': 'sensors/gpu/gpu_mem_temp',
         'poll_interval': 5000,
         'reading_type': 0x01,
@@ -384,6 +385,7 @@ def _add_gpu_mem_temperature_sensor(configs, index, sensornumber):
         'status_change_count': 0,
         'reading_error_count': 0,
         'ready': 0,
+        'sharememory': True,
         }
     if objpath in configs:
         configs[objpath].append(config)
