@@ -21,9 +21,8 @@ typedef struct {
 #define CABLE_SW3      2
 #define CABLE_SW4      3
 #define PORT1          0
-#define PORT2          1
 #define MAX_CABLE_SW   4
-#define MAX_CABLE_PORT 2
+#define MAX_CABLE_PORT 1
 
 CableLedStruct CableLed[MAX_CABLE_SW][MAX_CABLE_PORT];
 
@@ -140,7 +139,7 @@ void check_cable_status()
 				}
 			}
 		}
-		sleep(1);
+		sleep(30);
 	}
 }
 
@@ -151,40 +150,20 @@ void init_cable_gpio_mapping()
 	CableLed[CABLE_SW3][PORT1].gpioNumPresent = 262;
 	CableLed[CABLE_SW3][PORT1].gpioNumLED = 263;
 
-	CableLed[CABLE_SW3][PORT2].gpioNumA32Present = 264;
-	CableLed[CABLE_SW3][PORT2].gpioNumB9Present = 265;
-	CableLed[CABLE_SW3][PORT2].gpioNumPresent = 266;
-	CableLed[CABLE_SW3][PORT2].gpioNumLED = 267;
-
 	CableLed[CABLE_SW4][PORT1].gpioNumA32Present = 268;
 	CableLed[CABLE_SW4][PORT1].gpioNumB9Present = 269;
 	CableLed[CABLE_SW4][PORT1].gpioNumPresent = 270;
 	CableLed[CABLE_SW4][PORT1].gpioNumLED = 271;
-
-	CableLed[CABLE_SW4][PORT2].gpioNumA32Present = 272;
-	CableLed[CABLE_SW4][PORT2].gpioNumB9Present = 273;
-	CableLed[CABLE_SW4][PORT2].gpioNumPresent = 274;
-	CableLed[CABLE_SW4][PORT2].gpioNumLED = 275;
 
 	CableLed[CABLE_SW1][PORT1].gpioNumA32Present = 276;
 	CableLed[CABLE_SW1][PORT1].gpioNumB9Present = 277;
 	CableLed[CABLE_SW1][PORT1].gpioNumPresent = 278;
 	CableLed[CABLE_SW1][PORT1].gpioNumLED = 279;
 
-	CableLed[CABLE_SW1][PORT2].gpioNumA32Present = 280;
-	CableLed[CABLE_SW1][PORT2].gpioNumB9Present = 281;
-	CableLed[CABLE_SW1][PORT2].gpioNumPresent = 282;
-	CableLed[CABLE_SW1][PORT2].gpioNumLED = 283;
-
 	CableLed[CABLE_SW2][PORT1].gpioNumA32Present = 284;
 	CableLed[CABLE_SW2][PORT1].gpioNumB9Present = 285;
 	CableLed[CABLE_SW2][PORT1].gpioNumPresent = 286;
 	CableLed[CABLE_SW2][PORT1].gpioNumLED = 287;
-
-	CableLed[CABLE_SW2][PORT2].gpioNumA32Present = 288;
-	CableLed[CABLE_SW2][PORT2].gpioNumB9Present = 289;
-	CableLed[CABLE_SW2][PORT2].gpioNumPresent = 290;
-	CableLed[CABLE_SW2][PORT2].gpioNumLED = 291;
 }
 
 void open_gpio()
