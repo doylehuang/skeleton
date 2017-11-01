@@ -108,17 +108,19 @@ typedef struct {
 
 	__u8 sensor_number;
 
+	char present_gpio_path[100];
+
 } gpu_device_mapping;
 
 gpu_device_mapping gpu_device_bus[MAX_GPU_NUM] = {
-	{32, 0x4d, EM_GPU_DEVICE_1, 0x41},
-	{33, 0x4d, EM_GPU_DEVICE_2, 0x42},
-	{34, 0x4d, EM_GPU_DEVICE_3, 0x43},
-	{35, 0x4d, EM_GPU_DEVICE_4, 0x44},
-	{36, 0x4d, EM_GPU_DEVICE_5, 0x45},
-	{37, 0x4d, EM_GPU_DEVICE_6, 0x46},
-	{38, 0x4d, EM_GPU_DEVICE_7, 0x47},
-	{39, 0x4d, EM_GPU_DEVICE_8, 0x48},
+	{32, 0x4d, EM_GPU_DEVICE_1, 0x41, "/sys/class/gpio/gpio236/value"},
+	{33, 0x4d, EM_GPU_DEVICE_2, 0x42, "/sys/class/gpio/gpio237/value"},
+	{34, 0x4d, EM_GPU_DEVICE_3, 0x43, "/sys/class/gpio/gpio238/value"},
+	{35, 0x4d, EM_GPU_DEVICE_4, 0x44, "/sys/class/gpio/gpio239/value"},
+	{36, 0x4d, EM_GPU_DEVICE_5, 0x45, "/sys/class/gpio/gpio240/value"},
+	{37, 0x4d, EM_GPU_DEVICE_6, 0x46, "/sys/class/gpio/gpio241/value"},
+	{38, 0x4d, EM_GPU_DEVICE_7, 0x47, "/sys/class/gpio/gpio242/value"},
+	{39, 0x4d, EM_GPU_DEVICE_8, 0x48, "/sys/class/gpio/gpio243/value"},
 };
 
 int mkdir_p(const char *dir, const mode_t mode) {
@@ -312,6 +314,43 @@ int access_gpu_data(int index, unsigned char* writebuf, unsigned char* readbuf)
 	return -1;
 }
 
+int do_read_file(char *path)
+{
+	FILE *fp1 = NULL;
+	int retry = 10;
+	int i;
+	int val = -1;
+	for (i =0 ; i<retry; i++)
+	{
+		fp1= fopen(path,"r");
+		if(fp1 != NULL)
+			break;
+	}
+	if ( i == retry) {
+		return -1;
+	}
+	fscanf(fp1, "%d", &val);
+	fclose(fp1);
+	return val;
+}
+
+int read_file(char *path)
+{
+	int i ;
+	int retry = 50;
+	int rc = 0;
+
+	if (path == NULL)
+		return -1;
+
+	for (i = 0 ; i<retry ; i++)
+	{
+		rc = do_read_file(path);
+		if (rc >= 0)
+			return rc;
+	}
+	return rc;
+}
 
 int function_get_gpu_data(int index)
 {
@@ -319,7 +358,7 @@ int function_get_gpu_data(int index)
 	unsigned char temp_writebuf[4] = {NV_CMD_GET_TEMP,0x0,0x0,0x80};
 	unsigned char temp_mem_writebuf[4] = {NV_CMD_GET_TEMP,0x5,0x0,0x80};
 	unsigned char readbuf[4];
-	int rc=0;
+	int rc=-1;
 	char gpu_path[128];
 	char sys_cmd[128];
 	char gpu_info_node[256] = {0};
@@ -327,8 +366,9 @@ int function_get_gpu_data(int index)
 	int i=0;
 	FILE *fp;
 	char temperautur_str[FILE_LENGTH];
-	/*get gpu temp data*/
-	rc = access_gpu_data(index, temp_writebuf, readbuf);
+
+	if (read_file(gpu_device_bus[index].present_gpio_path) == 0)
+		rc = access_gpu_data(index, temp_writebuf, readbuf); /*get gpu temp data*/
 	if(rc==0) {
 		int gpu_mem_temp = -1;
 		G_gpu_data[gpu_device_bus[index].device_index].temp_ready = 1;
