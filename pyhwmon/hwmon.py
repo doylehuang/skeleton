@@ -1021,6 +1021,10 @@ def save_pid():
 
 if __name__ == '__main__':
 
+        #wait for node init finish
+        while not os.path.exists("/run/obmc/node_init_complete"):
+            sleep(2)
+
 	os.nice(-19)
 	save_pid()
 	name = dbus.service.BusName(DBUS_NAME,bus)

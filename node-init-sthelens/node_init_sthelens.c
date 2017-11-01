@@ -140,5 +140,7 @@ main(int argc, char *argv[])
     system("gpioutil -n RM_SYS_THROTTLE_N");
     system("gpioutil -n FIO_RM_SYS_THROTTLE_N");
 
+    system("touch /run/obmc/node_init_complete"); // notify hwmon for submanage system to trigger SEL
+
     return 0;
 }
