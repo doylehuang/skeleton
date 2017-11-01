@@ -32,7 +32,7 @@ def calChecksum(cal_data, data_len):
   sum = (~sum & 0xff) + 1;
   print "8-bit 2's complement checksum: %s" %(hex(sum))
 
-  return sum
+  return (sum & 0xff)
 
 def writeMAC(macaddr):
   if macaddr == None:
