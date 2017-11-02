@@ -14,6 +14,8 @@
 #define LM25066_NUM_1 2
 #define LM25066_NUM_2 8
 
+#define NOTIFY_COMPLETE_PATH "/run/obmc/node_init_complete"
+
 void init_pcie_slot_gpio()
 {
     int SlotPRSNTGPIO[] = {252, 253, 254, 255};
@@ -89,6 +91,14 @@ void init_gpu_gpio()
     }
 }
 
+static void notify_node_init_complete(void)
+{
+    FILE *file;
+    file=fopen(NOTIFY_COMPLETE_PATH, "w+");
+    if (file)
+        fclose(file);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -140,7 +150,7 @@ main(int argc, char *argv[])
     system("gpioutil -n RM_SYS_THROTTLE_N");
     system("gpioutil -n FIO_RM_SYS_THROTTLE_N");
 
-    system("touch /run/obmc/node_init_complete"); // notify hwmon for submanage system to trigger SEL
+    notify_node_init_complete(); // notify hwmon for submanage system to trigger SEL
 
     return 0;
 }
