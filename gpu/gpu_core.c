@@ -321,7 +321,7 @@ int do_read_file(char *path)
 	FILE *fp1 = NULL;
 	int val = -1;
 	fp1= fopen(path,"r");
-	if(fp1 != NULL)
+	if(fp1 == NULL)
 		return -1;
 	fscanf(fp1, "%d", &val);
 	fclose(fp1);
@@ -481,7 +481,6 @@ void gpu_data_scan()
 			printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 			fprintf(stderr,"Error:[%s] opening:[%s] , existed \n",gpu_path);
 			create_sharememory(i,SHARE_MEMORY_GPU);
-			break;
 		} else {
 			fp = fopen(gpu_path,"w");
 			if(fp == NULL) {
@@ -507,7 +506,6 @@ void gpu_data_scan()
 			printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 			fprintf(stderr,"Error:[%s] opening:[%s] , existed \n",gpu_path);
 			create_sharememory(i,SHARE_MEMORY_GPU_MEMORY);
-			break;
 		} else {
 			fp = fopen(gpu_path,"w");
 			if(fp == NULL) {
