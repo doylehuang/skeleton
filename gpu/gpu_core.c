@@ -110,17 +110,19 @@ typedef struct {
 
 	char present_gpio_path[100];
 
+	int present_gpio_value;
+
 } gpu_device_mapping;
 
 gpu_device_mapping gpu_device_bus[MAX_GPU_NUM] = {
-	{32, 0x4d, EM_GPU_DEVICE_1, 0x41, "/sys/class/gpio/gpio236/value"},
-	{33, 0x4d, EM_GPU_DEVICE_2, 0x42, "/sys/class/gpio/gpio237/value"},
-	{34, 0x4d, EM_GPU_DEVICE_3, 0x43, "/sys/class/gpio/gpio238/value"},
-	{35, 0x4d, EM_GPU_DEVICE_4, 0x44, "/sys/class/gpio/gpio239/value"},
-	{36, 0x4d, EM_GPU_DEVICE_5, 0x45, "/sys/class/gpio/gpio240/value"},
-	{37, 0x4d, EM_GPU_DEVICE_6, 0x46, "/sys/class/gpio/gpio241/value"},
-	{38, 0x4d, EM_GPU_DEVICE_7, 0x47, "/sys/class/gpio/gpio242/value"},
-	{39, 0x4d, EM_GPU_DEVICE_8, 0x48, "/sys/class/gpio/gpio243/value"},
+	{32, 0x4d, EM_GPU_DEVICE_1, 0x41, "/sys/class/gpio/gpio236/value", -1},
+	{33, 0x4d, EM_GPU_DEVICE_2, 0x42, "/sys/class/gpio/gpio237/value", -1},
+	{34, 0x4d, EM_GPU_DEVICE_3, 0x43, "/sys/class/gpio/gpio238/value", -1},
+	{35, 0x4d, EM_GPU_DEVICE_4, 0x44, "/sys/class/gpio/gpio239/value", -1},
+	{36, 0x4d, EM_GPU_DEVICE_5, 0x45, "/sys/class/gpio/gpio240/value", -1},
+	{37, 0x4d, EM_GPU_DEVICE_6, 0x46, "/sys/class/gpio/gpio241/value", -1},
+	{38, 0x4d, EM_GPU_DEVICE_7, 0x47, "/sys/class/gpio/gpio242/value", -1},
+	{39, 0x4d, EM_GPU_DEVICE_8, 0x48, "/sys/class/gpio/gpio243/value", -1},
 };
 
 int mkdir_p(const char *dir, const mode_t mode) {
@@ -317,18 +319,10 @@ int access_gpu_data(int index, unsigned char* writebuf, unsigned char* readbuf)
 int do_read_file(char *path)
 {
 	FILE *fp1 = NULL;
-	int retry = 10;
-	int i;
 	int val = -1;
-	for (i =0 ; i<retry; i++)
-	{
-		fp1= fopen(path,"r");
-		if(fp1 != NULL)
-			break;
-	}
-	if ( i == retry) {
+	fp1= fopen(path,"r");
+	if(fp1 != NULL)
 		return -1;
-	}
 	fscanf(fp1, "%d", &val);
 	fclose(fp1);
 	return val;
@@ -337,19 +331,19 @@ int do_read_file(char *path)
 int read_file(char *path)
 {
 	int i ;
-	int retry = 50;
-	int rc = 0;
+	int retry = 3;
+	int val= -1;
 
 	if (path == NULL)
 		return -1;
 
 	for (i = 0 ; i<retry ; i++)
 	{
-		rc = do_read_file(path);
-		if (rc >= 0)
-			return rc;
+		val = do_read_file(path);
+		if (val >= 0)
+			return val;
 	}
-	return rc;
+	return val;
 }
 
 int function_get_gpu_data(int index)
@@ -367,7 +361,10 @@ int function_get_gpu_data(int index)
 	FILE *fp;
 	char temperautur_str[FILE_LENGTH];
 
-	if (read_file(gpu_device_bus[index].present_gpio_path) == 0)
+	if (gpu_device_bus[index].present_gpio_value == -1)
+		gpu_device_bus[index].present_gpio_value = read_file(gpu_device_bus[index].present_gpio_path);
+
+	if (gpu_device_bus[index].present_gpio_value == 0)
 		rc = access_gpu_data(index, temp_writebuf, readbuf); /*get gpu temp data*/
 	if(rc==0) {
 		int gpu_mem_temp = -1;
