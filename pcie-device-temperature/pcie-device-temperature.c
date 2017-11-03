@@ -11,75 +11,24 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sdbus_property.h>
-#include <sys/mman.h>
 
 #define MAX_MDOT2_NUM 4
 #define MDOT2_WRITE_CMD 0x0
-#define PATH_MAX_STRING_SIZE 256
 
-#define PCIE_TEMP_PATH "/run/obmc/sharememory/org/openbmc/sensors/M2/M2_TMP"
+#define PCIE_TEMP_PATH "/tmp/pcie"
 
 typedef struct
 {
     uint8_t bus;
     uint8_t slave_addr;
-    uint8_t sensor_number;
 } pcie_dev_mapping;
 
 pcie_dev_mapping Mdot2[MAX_MDOT2_NUM] = {
-    {26, 0x6a, 0x70},
-    {27, 0x6a, 0x71},
-    {28, 0x6a, 0x72},
-    {29, 0x6a, 0x73},
+    {26, 0x6a},
+    {27, 0x6a},
+    {28, 0x6a},
+    {29, 0x6a},
 };
-
-int mkdir_p(const char *dir, const mode_t mode) {
-    char tmp[PATH_MAX_STRING_SIZE];
-    char *p = NULL;
-    struct stat sb;
-    size_t len;
-
-    /* copy path */
-    strncpy(tmp, dir, sizeof(tmp));
-    len = strlen(tmp);
-    if (len >= sizeof(tmp)) {
-        return -1;
-    }
-
-    /* remove trailing slash */
-    if(tmp[len - 1] == '/') {
-        tmp[len - 1] = 0;
-    }
-
-    /* recursive mkdir */
-    for(p = tmp + 1; *p; p++) {
-        if(*p == '/') {
-            *p = 0;
-            /* test path */
-            if (stat(tmp, &sb) != 0) {
-                /* path does not exist - create directory */
-                if (mkdir(tmp, mode) < 0) {
-                    return -1;
-                }
-            } else if (!S_ISDIR(sb.st_mode)) {
-                /* not a directory */
-                return -1;
-            }
-            *p = '/';
-        }
-    }
-    /* test path */
-    if (stat(tmp, &sb) != 0) {
-        /* path does not exist - create directory */
-        if (mkdir(tmp, mode) < 0) {
-            return -1;
-        }
-    } else if (!S_ISDIR(sb.st_mode)) {
-        /* not a directory */
-        return -1;
-    }
-    return 0;
-}
 
 int detect_i2cdevice_slave(int fd, int slave_addr)
 {
@@ -162,23 +111,18 @@ int get_Mdot2_data(int index)
 
 void pcie_data_scan()
 {
-    #define FILE_LENGTH 0x10
-    #define PCIE_TEMP_MAX 255
-    #define PCIE_TEMP_DEFAULT -1
-    int i, fp_share_memory;
+    int i;
     FILE *fp;
     struct stat st = {0};
     char pcie_path[128];
     char sys_cmd[128];
-    void *map_memory[MAX_MDOT2_NUM];
-    char pcie_temperautur_str[FILE_LENGTH];
     /* create the file patch for dbus usage*/
     /* check if directory is existed */
     if (stat(PCIE_TEMP_PATH, &st) == -1) {
-        mkdir_p(PCIE_TEMP_PATH, 0777);
+        mkdir(PCIE_TEMP_PATH, 0777);
     }
     for(i=0; i<MAX_MDOT2_NUM; i++) {
-        sprintf(pcie_path , "%s%s%s%d", PCIE_TEMP_PATH, "/", "value_", Mdot2[i].sensor_number);
+        sprintf(pcie_path , "%s%s%d%s", PCIE_TEMP_PATH, "/mdot2_", i+1,"_temp");
         if( access( pcie_path, F_OK ) != -1 ) {
             fprintf(stderr,"Error:[%s] opening:[%s] , existed \n",pcie_path);
             break;
@@ -188,31 +132,18 @@ void pcie_data_scan()
                fprintf(stderr,"Error:[%s] opening:[%s]\n",strerror(errno),pcie_path);
                 return;
             }
-            fprintf(fp, "%d",PCIE_TEMP_MAX);
+            fprintf(fp, "%d",-1);
             fclose(fp);
         }
     }
-
-    for(i=0; i<MAX_MDOT2_NUM; i++) {
-        sprintf(pcie_path , "%s%s%s%d", PCIE_TEMP_PATH, "/", "value_", Mdot2[i].sensor_number);
-
-        /* Open a file to be mapped. */
-        fp_share_memory = open(pcie_path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-        lseek(fp_share_memory, FILE_LENGTH+1, SEEK_SET);
-        write(fp_share_memory, "", PCIE_TEMP_DEFAULT);
-        lseek(fp_share_memory, 0, SEEK_SET);
-
-        /* Create map memory. */
-        map_memory[i] = mmap(0, FILE_LENGTH, PROT_WRITE, MAP_SHARED, fp_share_memory, 0);
-        close(fp_share_memory);
-	}
 
     while(1)
     {
         for(i=0; i<MAX_MDOT2_NUM; i++)
         {
-            sprintf(pcie_temperautur_str, "%d", get_Mdot2_data(i));
-            sprintf((char *)map_memory[i], "%s", pcie_temperautur_str);
+            sprintf(pcie_path , "%s%s%d%s", PCIE_TEMP_PATH, "/mdot2_", i+1,"_temp");
+            sprintf(sys_cmd, "echo %d > %s", get_Mdot2_data(i), pcie_path);
+            system(sys_cmd);
             sleep(1);
         }
     }

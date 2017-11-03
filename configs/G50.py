@@ -396,7 +396,7 @@ def _add_m2_temperature_sensor(configs, index, sensornumber):
     config = {
         'critical_upper': 85,
         'positive_hysteresis': 2,
-        'device_node': '/run/obmc/sharememory/org/openbmc/sensors/M2/M2_TMP/value_%d' % sensornumber,
+        'device_node': '/tmp/pcie/mdot2_%d_temp' % index,
         'poll_interval': 5000,
         'reading_type': 0x01,
         'scale': 1,
@@ -410,7 +410,6 @@ def _add_m2_temperature_sensor(configs, index, sensornumber):
         'status_change_count': 0,
         'reading_error_count': 0,
         'pcie_slot_index': 9,
-        'sharememory': True,
         }
     if objpath in configs:
         configs[objpath].append(config)

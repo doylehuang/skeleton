@@ -546,10 +546,7 @@ class Hwmons(SensorManager):
 						if hwmon_path:
 							raw_value = int(self.readAttribute(hwmon_path))
 						else:
-							if 'sharememory' in hwmon:
-								raw_value = int(g_share_table[objpath+'value_'+str(hwmon['sensornumber'])].read())
-							else:
-								raw_value = int(self.readAttribute(hwmon['device_node']))
+							raw_value = int(self.readAttribute(hwmon['device_node']))
 
 					if raw_value == -1:
 						hwmon['reading_error_count']+=1
@@ -839,9 +836,6 @@ class Hwmons(SensorManager):
 						or ('sensornumber' in hwmon and hwmon['sensornumber'] >= 0x83 and hwmon['sensornumber'] <= 0x88):
 						if (self.sensors.has_key(hwmon['sensornumber']) == False):
 							for prop in hwmon.keys():
-								if 'sharememory' in hwmon:
-									g_share_table[objpath+'value_'+str(hwmon['sensornumber'])] = ShareMemory.ConqueSoleSharedMemory()
-									g_share_table[objpath+'value_'+str(hwmon['sensornumber'])].create(objpath, 'value_'+str(hwmon['sensornumber']))
 								if (IFACE_MAPPING.has_key(prop)):
 									if prop == 'firmware_update':
 										property_file_ctl.SetProperty(objpath, prop, hwmon[prop])
