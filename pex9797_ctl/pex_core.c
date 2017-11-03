@@ -314,7 +314,7 @@ void write_file_pex(int pex_idx, double data, char *sub_name)
 	}
 	
 
-	sprintf(f_path, "%s/pex%d_%s", PEX_TEMP_PATH, pex_idx, sub_name);
+	sprintf(f_path, "%s/pex%d_%s", PEX_TEMP_PATH, pex_idx+1, sub_name);
 	sprintf(sys_cmd, "echo %d > %s", (int)data, f_path);
 	system(sys_cmd);
 }
@@ -523,7 +523,7 @@ int  init_data_folder(int index)
 {
 	char f_path[128];
 	FILE *fp;
-	sprintf(f_path, "%s/pex%d_temp", PEX_TEMP_PATH, index);
+	sprintf(f_path, "%s/pex%d_temp", PEX_TEMP_PATH, index+1);
 	if( access( f_path, F_OK ) != -1 )
 		return 1;
 	else {

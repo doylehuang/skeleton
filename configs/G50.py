@@ -579,7 +579,7 @@ def _add_pex9797(configs, index, sensornumber):
         'sensornumber': sensornumber,
         'sensor_type': '0x01',
         'reading_type': 0x01,
-        'sensor_name': 'PLX Switch %d Temp' % (index+1),
+        'sensor_name': 'PLX Switch %d Temp' % index,
         'standby_monitor': False,
         'units': 'C',
         'index': index,
@@ -1008,10 +1008,10 @@ _add_psu_status_sensor(HWMON_SENSOR_CONFIG, 3, 0x85, '10-0058')
 _add_psu_status_sensor(HWMON_SENSOR_CONFIG, 4, 0x86, '11-0058')
 _add_psu_status_sensor(HWMON_SENSOR_CONFIG, 5, 0x87, '12-0058')
 _add_psu_status_sensor(HWMON_SENSOR_CONFIG, 6, 0x88, '13-0058')
-_add_pex9797(HWMON_SENSOR_CONFIG, 0, 0x37)
-_add_pex9797(HWMON_SENSOR_CONFIG, 1, 0x38)
-_add_pex9797(HWMON_SENSOR_CONFIG, 2, 0x39)
-_add_pex9797(HWMON_SENSOR_CONFIG, 3, 0x3A)
+_add_pex9797(HWMON_SENSOR_CONFIG, 1, 0x37)
+_add_pex9797(HWMON_SENSOR_CONFIG, 2, 0x38)
+_add_pex9797(HWMON_SENSOR_CONFIG, 3, 0x39)
+_add_pex9797(HWMON_SENSOR_CONFIG, 4, 0x3A)
 
 _add_event_log_sensor(SENSOR_MONITOR_CONFIG, 0x80)
 _add_ntp_status_sensor(SENSOR_MONITOR_CONFIG, 0x81)
