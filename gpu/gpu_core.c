@@ -476,12 +476,15 @@ void gpu_data_scan()
 	}
 	for(i=0; i<MAX_GPU_NUM; i++) {
 		sprintf(gpu_path, "%s%s%s%d", GPU_TEMP_PATH, "/", "value_", gpu_device_bus[i].sensor_number);
+		printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 		if( access( gpu_path, F_OK ) != -1 ) {
+			printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 			fprintf(stderr,"Error:[%s] opening:[%s] , existed \n",gpu_path);
 			create_sharememory(i,SHARE_MEMORY_GPU);
 		} else {
 			fp = fopen(gpu_path,"w");
 			if(fp == NULL) {
+				printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 				fprintf(stderr,"Error:[%s] opening:[%s]\n",strerror(errno),gpu_path);
 				return;
 			}
@@ -498,12 +501,15 @@ void gpu_data_scan()
 	}
 	for(i=0; i<MAX_GPU_NUM; i++) {
 		sprintf(gpu_path, "%s%s%s%d", GPU_MEM_TEMP_PATH, "/", "value_", GPU_MEM_TEMP_1 + i);
+		printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 		if( access( gpu_path, F_OK ) != -1 ) {
+			printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 			fprintf(stderr,"Error:[%s] opening:[%s] , existed \n",gpu_path);
 			create_sharememory(i,SHARE_MEMORY_GPU_MEMORY);
 		} else {
 			fp = fopen(gpu_path,"w");
 			if(fp == NULL) {
+				printf("[PT] %s(%d)\n",__FUNCTION__,__LINE__);
 				fprintf(stderr,"Error:[%s] opening:[%s]\n",strerror(errno),gpu_path);
 				return;
 			}
