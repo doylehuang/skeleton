@@ -197,7 +197,7 @@ static const sd_bus_vtable fan_control_vtable[] = {
 	SD_BUS_VTABLE_END,
 };
 
-static int get_dbus_fan_parameters(sd_bus *bus, char *request_param, int *reponse_len, char reponse_data[50][200], int *size_sensor_list, int *base_sensor_number, int *flag_shm)
+static int get_dbus_fan_parameters(sd_bus *bus, char *request_param, int *reponse_len, char reponse_data[50][200], int *size_sensor_list, int *base_sensor_number)
 {
 	sd_bus_error bus_error = SD_BUS_ERROR_NULL;
 	sd_bus_message *response = NULL;
@@ -207,7 +207,6 @@ static int get_dbus_fan_parameters(sd_bus *bus, char *request_param, int *repons
 	*reponse_len = 0; //clear reponse_len
 	*size_sensor_list = 0;
 	*base_sensor_number = -1;
-	*flag_shm = 0;
 
 	rc = sd_bus_call_method(bus,
 				"org.openbmc.managers.System",
@@ -247,14 +246,13 @@ static int get_dbus_fan_parameters(sd_bus *bus, char *request_param, int *repons
 	sd_bus_error_free(&bus_error);
 	response = sd_bus_message_unref(response);
 
-	if (*reponse_len==4 || *reponse_len==5) {
+	if (*reponse_len==4) {
 		if (strcmp(reponse_data[1], "SensorNumberList") == 0) {
 			*base_sensor_number = atof(reponse_data[2]);
 			*size_sensor_list = atoi(reponse_data[3]);
-			if (*reponse_len==5)
-				*flag_shm = atoi(reponse_data[4]);
 		}
 	}
+
 	return rc;
 }
 
@@ -319,8 +317,7 @@ start_fan_services()
 	int fan_index=0, map_pwm_index=0;
 	int base_sensor_number = 0;
 	int size_sensor_list = 0;
-	int flag_shm = 0;
-	get_dbus_fan_parameters(bus_type, "FAN_INPUT_OBJ", &reponse_len, reponse_data, &size_sensor_list, &base_sensor_number, &flag_shm);
+	get_dbus_fan_parameters(bus_type, "FAN_INPUT_OBJ", &reponse_len, reponse_data, &size_sensor_list, &base_sensor_number);
 	if (size_sensor_list>0)
 		reponse_len = size_sensor_list;
 	for (i = 0; i<reponse_len; i++) {
@@ -331,7 +328,7 @@ start_fan_services()
 		sys_pwm_write(fan_index, EM_FAN_CMD_EN, 1, "tacho");
 	}
 
-	get_dbus_fan_parameters(bus_type, "FAN_OUTPUT_OBJ", &reponse_len, reponse_data, &size_sensor_list, &base_sensor_number, &flag_shm);
+	get_dbus_fan_parameters(bus_type, "FAN_OUTPUT_OBJ", &reponse_len, reponse_data, &size_sensor_list, &base_sensor_number);
 	if (size_sensor_list > 0) {
 		register_fan_services(bus_type, fan_slot, reponse_data[0]);
 	} else {
