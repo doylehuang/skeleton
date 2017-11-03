@@ -24,6 +24,9 @@ from time import sleep
 import property_file_ctl
 from bmchealth_handler import watch_redfish, watch_event_service
 from sensor_manager2 import *
+import fcntl
+import signal
+
 
 SENSOR_BUS = 'org.openbmc.Sensors'
 # sensors include /org/openbmc/sensors and /org/openbmc/control
@@ -114,7 +117,26 @@ class Hwmons(SensorManager):
 		self.pmbus5_hwmon = ""
 		self.pmbus6_hwmon = ""
 		self.record_pgood = 0
+		self.current_pgood = self.read_powergood_value()
+
+		signal.signal(signal.SIGIO, self.get_powergood_handler)
+		fd = os.open("/sys/class/gpio/gpio334", os.O_DSYNC)
+		fcntl.fcntl(fd, fcntl.F_SETSIG, 0)
+		fcntl.fcntl(fd, fcntl.F_NOTIFY,fcntl.DN_MODIFY | fcntl.DN_CREATE | fcntl.DN_MULTISHOT)
 		glib.timeout_add_seconds(DIR_POLL_INTERVAL, self.scanDirectory)
+
+	def read_powergood_value(self):
+		val = -1
+		try:
+			with open('/sys/class/gpio/gpio390/value', 'r') as f:
+				val = int(f.readline()) ^ 1
+		except:
+			pass
+		return val
+
+	def get_powergood_handler(self, signum, frame):
+		self.current_pgood = self.read_powergood_value()
+		print "HWMON: get_powergood_handler : " + str(self.current_pgood)
 
 	def readAttribute(self,filename):
 		val = "-1"
@@ -461,16 +483,16 @@ class Hwmons(SensorManager):
 	def check_system_event(self, current_pgood):
 		try:
 			system_event_objpath = "/org/openbmc/sensors/system_event"
-			if self.record_pgood != current_pgood:
+			if self.record_pgood != self.current_pgood:
 				result = {'logid':0}
-				if current_pgood == 1: #current poweroff->poweron condition
+				if self.current_pgood == 1: #current poweroff->poweron condition
 					self.objects[system_event_objpath].Set(HwmonSensor.IFACE_NAME, 'severity_health', 'OK')
 					sensortype = self.objects[system_event_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
 					sensor_number = self.objects[system_event_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 					result = bmclogevent_ctl.BmcLogEventMessages(system_event_objpath, "System Event", \
 						"Asserted",  "System Event PowerOn", "System Event PowerOn",\
 						sensortype=sensortype, sensor_number=sensor_number)
-				elif current_pgood == 0: #current poweron->poweroff condition
+				elif self.current_pgood == 0: #current poweron->poweroff condition
 					self.objects[system_event_objpath].Set(HwmonSensor.IFACE_NAME, 'severity_health', 'Critical')
 					sensortype = self.objects[system_event_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
 					sensor_number = self.objects[system_event_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
@@ -479,7 +501,7 @@ class Hwmons(SensorManager):
 						sensortype=sensortype, sensor_number=sensor_number)
 
 				if (result['logid'] !=0):
-					self.record_pgood = current_pgood
+					self.record_pgood = self.current_pgood
 		except:
 			pass
 
@@ -512,12 +534,9 @@ class Hwmons(SensorManager):
 						standby_monitor = hwmon['standby_monitor']
 					# Skip monitor while DC power off if stand by monitor is False
 					if not standby_monitor:
-						current_pgood = 0
 						try:
-							with open('/sys/class/gpio/gpio390/value', 'r') as f:
-								current_pgood = int(f.readline()) ^ 1
-							self.check_system_event(current_pgood)
-							if  current_pgood == 0:
+							self.check_system_event(self.current_pgood)
+							if  self.current_pgood == 0:
 								pre_pgood = 0
 								if 'sensornumber' in hwmon:
 									self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), -1)
@@ -563,8 +582,8 @@ class Hwmons(SensorManager):
 							self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', raw_value / scale)
 					hwmon['reading_error_count'] = 0
 
-					if pre_pgood == 0 and current_pgood == 1:
-						pre_pgood = current_pgood
+					if pre_pgood == 0 and self.current_pgood == 1:
+						pre_pgood = self.current_pgood
 						delay = True
 					else:
 						delay = False
@@ -640,10 +659,9 @@ class Hwmons(SensorManager):
 			if  self.pgood_intf == None:
 				self.pgood_obj = bus.get_object('org.openbmc.control.Power', '/org/openbmc/control/power0', introspect=False)
 				self.pgood_intf = dbus.Interface(self.pgood_obj,dbus.PROPERTIES_IFACE)
-			current_pgood = self.pgood_intf.Get('org.openbmc.control.Power', 'pgood')
-			self.check_system_event(current_pgood)
+			self.check_system_event(self.current_pgood)
 			if not standby_monitor:
-				if  current_pgood == 0:
+				if  self.current_pgood == 0:
 					rtn = intf.setByPoll(-1)
 					if (rtn[0] == True):
 						self.writeAttribute(attribute,rtn[1])
@@ -991,9 +1009,9 @@ def save_pid():
 
 if __name__ == '__main__':
 
-        #wait for node init finish
-        while not os.path.exists("/run/obmc/node_init_complete"):
-            sleep(2)
+	#wait for node init finish
+	while not os.path.exists("/run/obmc/node_init_complete"):
+		sleep(2)
 
 	os.nice(-19)
 	save_pid()
