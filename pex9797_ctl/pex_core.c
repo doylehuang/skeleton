@@ -11,24 +11,17 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sdbus_property.h>
-#include <sys/mman.h>
 
 
 #define MAX_I2C_DEV_LEN 32
 #define GPU_ACCESS_SUCCESS_RETURN 0x1f
 #define MAX_PEX_NUM (4)
 
-#define PEX_TEMP_PATH "/run/obmc/sharememory/org/openbmc/sensors/pex/pex"
-#define PEX_TEMP_DEFAULT -1
-#define PEX_TEMP_MAX 255
-#define FILE_LENGTH 0x10
-#define PATH_MAX_STRING_SIZE 256
-
+#define PEX_TEMP_PATH "/tmp/pex"
 #define PEX_SERIAL_LEN (8)
 #define PEX_UDID_LEN (17)
 #define PEX_SMBUS_BLOCK_WRITE_CMD (0xBE)
 
-void *map_memory[MAX_PEX_NUM];
 
 enum {
 	EM_PEX_DEVICE_1 = 0,
@@ -147,54 +140,6 @@ pex_device_i2c_cmd pex_device_cmd_tab[EM_PEX_CMD_MAX] = {
 #define I2C_M_RECV_LEN          0x0400  /* length will be first received byte */
 
 static int g_use_pec = 0;
-
-int mkdir_p(const char *dir, const mode_t mode) {
-    char tmp[PATH_MAX_STRING_SIZE];
-    char *p = NULL;
-    struct stat sb;
-    size_t len;
-
-    /* copy path */
-    strncpy(tmp, dir, sizeof(tmp));
-    len = strlen(tmp);
-    if (len >= sizeof(tmp)) {
-        return -1;
-    }
-
-    /* remove trailing slash */
-    if(tmp[len - 1] == '/') {
-        tmp[len - 1] = 0;
-    }
-
-    /* recursive mkdir */
-    for(p = tmp + 1; *p; p++) {
-        if(*p == '/') {
-            *p = 0;
-            /* test path */
-            if (stat(tmp, &sb) != 0) {
-                /* path does not exist - create directory */
-                if (mkdir(tmp, mode) < 0) {
-                    return -1;
-                }
-            } else if (!S_ISDIR(sb.st_mode)) {
-                /* not a directory */
-                return -1;
-            }
-            *p = '/';
-        }
-    }
-    /* test path */
-    if (stat(tmp, &sb) != 0) {
-        /* path does not exist - create directory */
-        if (mkdir(tmp, mode) < 0) {
-            return -1;
-        }
-    } else if (!S_ISDIR(sb.st_mode)) {
-        /* not a directory */
-        return -1;
-    }
-    return 0;
-}
 
 static int i2c_io(int fd, int slave_addr, int write_len, __u8 *write_data_bytes, int read_len, __u8 *read_data_bytes)
 {
@@ -356,7 +301,6 @@ void write_file_pex(int pex_idx, double data, char *sub_name)
 	char sys_cmd[256];
 	static int retry= 20;
 	static double prev_data = 0.0;
-	char pex_temperautur_str[FILE_LENGTH];
 
 	if (data > 0) {
 		prev_data = data;
@@ -369,9 +313,10 @@ void write_file_pex(int pex_idx, double data, char *sub_name)
 		retry-=1;
 	}
 	
-	sprintf(f_path , "%s%s%s%d", PEX_TEMP_PATH, "/", "value_", pex_device_bus[pex_idx].sensor_number);
-	sprintf(pex_temperautur_str, "%d", (int)data);
-	sprintf((char *)map_memory[pex_idx], "%s", pex_temperautur_str);
+
+	sprintf(f_path, "%s/pex%d_%s", PEX_TEMP_PATH, pex_idx, sub_name);
+	sprintf(sys_cmd, "echo %d > %s", (int)data, f_path);
+	system(sys_cmd);
 }
 
 int function_get_pex_temp_data(int pex_idx)
@@ -574,43 +519,21 @@ out_pex_udid_data:
 }
 
 
-void create_sharememory(int index)
-{
-	int fp_share_memory;
-	char f_path[128];
-	sprintf(f_path , "%s%s%s%d", PEX_TEMP_PATH, "/", "value_", pex_device_bus[index].sensor_number);
-
-	/* Open a file to be mapped. */
-	fp_share_memory = open(f_path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-	lseek(fp_share_memory, FILE_LENGTH+1, SEEK_SET);
-	write(fp_share_memory, "", PEX_TEMP_DEFAULT);
-	lseek(fp_share_memory, 0, SEEK_SET);
-
-	/* Create map memory. */
-	map_memory[index] = mmap(0, FILE_LENGTH, PROT_WRITE, MAP_SHARED, fp_share_memory, 0);
-	close(fp_share_memory);
-}
-
 int  init_data_folder(int index)
 {
 	char f_path[128];
 	FILE *fp;
-
-	sprintf(f_path , "%s%s%s%d", PEX_TEMP_PATH, "/", "value_", pex_device_bus[index].sensor_number);
-	if( access( f_path, F_OK ) != -1 ){
-		create_sharememory(index);
+	sprintf(f_path, "%s/pex%d_temp", PEX_TEMP_PATH, index);
+	if( access( f_path, F_OK ) != -1 )
 		return 1;
-	}
 	else {
-		// Open file
 		fp = fopen(f_path,"w");
 		if(fp == NULL) {
 			fprintf(stderr,"Error:[%s] opening:[%s]\n",strerror(errno),f_path);
 			return -1;
 		}
-		fprintf(fp, "%d",PEX_TEMP_MAX);
+		fprintf(fp, "%d",-1);
 		fclose(fp);
-		create_sharememory(index);
 	}
 	return 1;
 
@@ -648,7 +571,7 @@ void pex_data_scan()
 	/* create the file patch for dbus usage*/
 	/* check if directory is existed */
 	if (access(PEX_TEMP_PATH, F_OK) != 0) {
-		mkdir_p(PEX_TEMP_PATH, 0755);
+		mkdir(PEX_TEMP_PATH, 0755);
 	}
 
 	for(i=0; i<MAX_PEX_NUM; i++) {

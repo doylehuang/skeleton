@@ -571,7 +571,7 @@ def _add_cable_led(configs, index, gpio):
 def _add_pex9797(configs, index, sensornumber):
     objpath = '/org/openbmc/sensors/pex/pex'
     config = {
-        'device_node': '/run/obmc/sharememory/org/openbmc/sensors/pex/pex/value_%d' % sensornumber,
+        'device_node': '/tmp/pex/pex%d_temp' % index,
         'critical_upper': 111,
         'positive_hysteresis': 2,
         'object_path': 'sensors/pex/pex',
@@ -587,7 +587,6 @@ def _add_pex9797(configs, index, sensornumber):
         'status_change_count': 0,
         'reading_error_count': 0,
         'ready': 0,
-        'sharememory': True,
         }
     if objpath in configs:
         configs[objpath].append(config)
