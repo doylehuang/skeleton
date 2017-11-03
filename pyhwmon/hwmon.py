@@ -505,7 +505,7 @@ class Hwmons(SensorManager):
 		except:
 			pass
 
-	def sensor_polling(self, sensor_list):
+	def sensor_polling(self, sensor_list, obj_data_man):
 		global pre_pgood
 		for sensor_set in sensor_list:
 			objpath = sensor_set[0]
@@ -523,7 +523,7 @@ class Hwmons(SensorManager):
 				elif objpath == '/org/openbmc/sensors/session_audit':
 					self.sesson_audit_check(objpath, hwmons[0])
 					continue
-				threshold_props = self.objects[objpath].GetAll(SensorThresholds.IFACE_NAME)
+				threshold_props = obj_data_man[objpath][SensorThresholds.IFACE_NAME]
 			except:
 				#skip this sensor set
 				continue
@@ -604,7 +604,8 @@ class Hwmons(SensorManager):
 							continue
 						hwmon['status_change_count'] = 0
 						self.objects[objpath].Set(SensorThresholds.IFACE_NAME, \
-							'threshold_state_'+str(hwmon['sensornumber']), hwmon['threshold_state'])	
+							'threshold_state_'+str(hwmon['sensornumber']), hwmon['threshold_state'])
+						threshold_props['threshold_state_'+str(hwmon['sensornumber'])] = hwmon['threshold_state']
 						severity = Event.SEVERITY_INFO
 						event_type_code = 0x0
 
@@ -902,7 +903,7 @@ class Hwmons(SensorManager):
 				self.entity_presence_check(objectpath , entity_list[objectpath][0], entity_list[objectpath][1])
 		if (len(sensor_list)>0):
 			print sensor_list
-			glib.timeout_add_seconds(5,self.sensor_polling,sensor_list)
+			glib.timeout_add_seconds(5,self.sensor_polling,sensor_list, self.GetManagedObjects())
 
 	def checkPmbusHwmon(self, instance_name, dpath):
 		if instance_name == "8-0058":
