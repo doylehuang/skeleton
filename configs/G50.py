@@ -1436,6 +1436,12 @@ BMC_LOGEVENT_CONFIG = {
 					'SSH Invalid User': [0xF2, 0x01, 0x02],
 				},
 			},
+			'SSH Closed Session Unspecified': {
+				'Severity': 'OK',
+				'Event Data Information': {
+					'SSH Closed Session Unspecified': [0xF1, 0x01, 0x02],
+				},
+			},
 			'SSH Closed Session By Command': {
 				'Severity': 'OK',
 				'Event Data Information': {

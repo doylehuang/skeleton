@@ -386,6 +386,33 @@ class Hwmons(SensorManager):
 												"Asserted",  "SSH Closed Session By Command", "SSH Closed Session By Command",\
 												sensortype=sensortype, sensor_number=sensor_number)
 
+					idFilter = 'disconnected by server request'
+					idPosition = fileString.find(idFilter)
+					if idPosition != -1:
+						sensortype = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+						sensor_number = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
+						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+												"Asserted",  "SSH Closed Session By Command", "SSH Closed Session By Command",\
+												sensortype=sensortype, sensor_number=sensor_number)
+
+					idFilter = 'disconnected by user'
+					idPosition = fileString.find(idFilter)
+					if idPosition != -1:
+						sensortype = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+						sensor_number = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
+						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+												"Asserted",  "SSH Closed Session By Command", "SSH Closed Session By Command",\
+												sensortype=sensortype, sensor_number=sensor_number)
+
+					idFilter = 'Exiting on signal'
+					idPosition = fileString.find(idFilter)
+					if idPosition != -1:
+						sensortype = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
+						sensor_number = self.objects[session_audit_objpath].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
+						bmclogevent_ctl.BmcLogEventMessages(session_audit_objpath, "Session Audit Event", \
+												"Asserted",  "SSH Closed Session Unspecified", "SSH Closed Session Unspecified",\
+												sensortype=sensortype, sensor_number=sensor_number)
+
 					idFilter = 'Timeout'
 					idPosition = fileString.find(idFilter)
 					if idPosition != -1:
