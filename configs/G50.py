@@ -310,7 +310,6 @@ GPIO_CONFIG['PWR_BTN_N'] = {'gpio_pin': 'F1', 'direction': 'in'}
 GPIO_CONFIG['PWR_STA_LED_N'] = {'gpio_pin': 'F2', 'direction': 'out', 'inverse': 'yes'}
 GPIO_CONFIG['UID_BTN_N'] = {'gpio_pin': 'F3', 'direction': 'in'}
 GPIO_CONFIG['UID_LED_N'] = {'gpio_pin': 'F4', 'direction': 'out', 'inverse': 'yes'}
-GPIO_CONFIG['SYS_THROTTLE_N'] = {'gpio_pin': 'F5', 'direction': 'in', 'inverse': 'yes'}
 GPIO_CONFIG['FM_GPIO4'] = {'gpio_pin': 'F6', 'direction': 'out'}
 GPIO_CONFIG['GPU_OVERT_N'] = {'gpio_pin': 'F7', 'direction': 'out'}
 GPIO_CONFIG['RM_SYS_THROTTLE_N'] = {'gpio_pin': 'M0', 'direction': 'in', 'inverse': 'yes'}
