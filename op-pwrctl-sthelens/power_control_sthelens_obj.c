@@ -64,7 +64,7 @@ static void bind_device_to_driver(const char *device, const char *driver)
 	struct stat stat = {0};
 	FILE *fp = NULL;
 
-	if (64 <= sprintf(path, "%s/%s", driver, device)) {
+	if (64 <= snprintf(path, 64, "%s/%s", driver, device)) {
 		printf("ERROR not enough space to generate device path\n");
 		return;
 	}
@@ -79,7 +79,7 @@ static void bind_device_to_driver(const char *device, const char *driver)
 		return;
 	}
 
-	if (64 <= sprintf(path, "%s/bind", driver)) {
+	if (64 <= snprintf(path, 64, "%s/bind", driver)) {
 		printf("ERROR not enough space to generate bind path\n");
 		return;
 	}
