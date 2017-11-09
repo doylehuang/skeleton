@@ -224,6 +224,7 @@ class Hwmons(SensorManager):
 		check_subsystem_health_obj_path = "/org/openbmc/sensors/management_subsystem_health"
 		if delay == True:
 			sleep(2)
+			return False
 		if hwmon.has_key('mapping'):
 			if hwmon['mapping'] not in self.check_entity_mapping:
 				return False
@@ -246,7 +247,7 @@ class Hwmons(SensorManager):
 				return True
 			if hwmon['sensornumber'] not in self.check_subsystem_health:
 				self.check_subsystem_health[hwmon['sensornumber']] = 1
-			if raw_value == -1 and self.check_subsystem_health[hwmon['sensornumber']] == 1:
+			if raw_value == -1 and self.check_subsystem_health[hwmon['sensornumber']] == 1 and self.current_pgood==1:
 				sensortype = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
 				sensor_number = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
 				bmclogevent_ctl.BmcLogEventMessages(check_subsystem_health_obj_path, \
