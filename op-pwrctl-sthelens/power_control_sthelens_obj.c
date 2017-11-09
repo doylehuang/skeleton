@@ -12,6 +12,7 @@
 #include <gpio.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 
 /* ------------------------------------------------------------------------- */
 static const gchar* dbus_object_path = "/org/openbmc/control";
@@ -57,6 +58,42 @@ power_led_init()
 	}
 }
 
+static void bind_device_to_driver(const char *device, const char *driver)
+{
+	char path[64] = {0};
+	struct stat stat = {0};
+	FILE *fp = NULL;
+
+	if (64 <= sprintf(path, "%s/%s", driver, device)) {
+		printf("ERROR not enough space to generate device path\n");
+		return;
+	}
+
+	if (!lstat(path, &stat)) {
+		// device already binds with driver
+		return;
+	}
+
+	if (errno != ENOENT) {
+		printf("ERROR failed to lstat(%s): %s\n", path, strerror(errno));
+		return;
+	}
+
+	if (64 <= sprintf(path, "%s/bind", driver)) {
+		printf("ERROR not enough space to generate bind path\n");
+		return;
+	}
+
+	if (!(fp = fopen(path, "w"))) {
+		printf("ERROR can't open %s: %s\n", path, strerror(errno));
+		return;
+	}
+
+	fwrite(device, sizeof(char), strlen(device), fp);
+
+	fclose(fp);
+}
+
 // TODO:  Change to interrupt driven instead of polling
 static gboolean
 poll_pgood(gpointer user_data)
@@ -87,6 +124,12 @@ poll_pgood(gpointer user_data)
 	gpio_close(&pgood);
 
 	if(rc == GPIO_OK) {
+		if (gpio == 1) {
+			// NOTE the order must conform with DTS, otherwise serial numbers may change.
+			bind_device_to_driver("2-0076", "/sys/bus/i2c/drivers/pca954x");
+			bind_device_to_driver("2-0075", "/sys/bus/i2c/drivers/pca954x");
+			bind_device_to_driver("3-0070", "/sys/bus/i2c/drivers/pca954x");
+		}
 		//if changed, set property and emit signal
 		if(gpio != control_power_get_pgood(control_power)) {
 			control_power_set_pgood(control_power,gpio);
