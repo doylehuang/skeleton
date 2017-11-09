@@ -9,6 +9,8 @@ import obmc_system_config as System
 import time
 import bmclogevent_ctl
 import mac_guid
+import fcntl
+import signal
 
 DBUS_NAME = 'org.openbmc.Sensors'
 DBUS_INTERFACE = 'org.freedesktop.DBus.Properties'
@@ -314,7 +316,7 @@ def bmchealth_check_bmc_reset():
         LogEventBmcHealthMessages("Asserted", "BMC Reset", "Register/Pin Reset")
     return True
 
-def bmchealth_check_log_rollover():
+def bmchealth_check_log_rollover(signum=None, frame=None):
     current_log_rollover =  bmclogevent_ctl.bmclogevent_get_log_rollover()
     global g_previous_log_rollover
     if g_previous_log_rollover == -1:
@@ -554,13 +556,21 @@ if __name__ == '__main__':
     bmchealth_check_bmc_reset() # Before check fwu, after check watchdog
     bmchealth_check_fw_update_complete()
     bmchealth_check_boot_spi()
+    bmchealth_check_log_rollover()
     glib.timeout_add_seconds(5,bmchealth_check_network)
     glib.timeout_add_seconds(5,bmchealth_check_i2c, 5)
-    glib.timeout_add_seconds(5,bmchealth_check_log_rollover)
     glib.timeout_add_seconds(5,bmchealth_check_memory_utilization)
     glib.timeout_add_seconds(20,bmchealth_check_empty_invalid_fru)
     #glib.timeout_add_seconds(5,bmchealth_check_CPU_utilization)
     glib.timeout_add_seconds(5,bmchealth_check_alignment_traps)
+
+    #create async I/O signal to detect /var/lib/obmc/events/ file with create or delete
+    #,and trigger bmchealth_check_log_rollover()
+    signal.signal(signal.SIGIO, bmchealth_check_log_rollover)
+    fd = os.open("/var/lib/obmc/events", os.O_ASYNC)
+    fcntl.fcntl(fd, fcntl.F_SETSIG, 0)
+    fcntl.fcntl(fd, fcntl.F_NOTIFY, fcntl.DN_CREATE | fcntl.DN_DELETE| fcntl.DN_MULTISHOT)
+
     print "bmchealth_handler control starting"
     mainloop.run()
 
