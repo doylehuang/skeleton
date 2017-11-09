@@ -464,6 +464,8 @@ static int get_sensor_reading_file(char *obj_path, int *sensor_reading, struct s
 	int i;
 	*sensor_reading = 0;
 	sprintf(file_path, obj_path, (idx+1));
+	if( access( file_path, F_OK ) == -1 ) //check file exist or not
+		return 0;
 	for (i = 0; i<retry; i++) {
 		rc = read_file(file_path);
 		if (rc > 0)
