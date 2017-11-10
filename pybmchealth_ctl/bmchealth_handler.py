@@ -38,8 +38,10 @@ def LogEventBmcHealthMessages(s_assert="", s_event_indicator="", \
         s_severity_key = s_event_indicator + "-" + s_evd_desc
         if result['logid'] != 0:
             if s_assert == "Asserted":
-                bmclogevent_ctl.bmclogevent_set_value(g_bmchealth_obj_path, 1, offset=(result['evd1']&0xf))
-                g_record_bmchealth_severity[s_severity_key] = result['Severity']
+                if 'Severity' in result:
+                    if result['Severity'] != 'OK':
+                        bmclogevent_ctl.bmclogevent_set_value(g_bmchealth_obj_path, 1, offset=(result['evd1']&0xf))
+                    g_record_bmchealth_severity[s_severity_key] = result['Severity']
             elif s_assert == "Deasserted":
                 bmclogevent_ctl.bmclogevent_set_value(g_bmchealth_obj_path, 0, offset=(result['evd1']&0xf))
                 del g_record_bmchealth_severity[s_severity_key]
