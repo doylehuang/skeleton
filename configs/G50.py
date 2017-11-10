@@ -409,6 +409,7 @@ def _add_m2_temperature_sensor(configs, index, sensornumber):
         'status_change_count': 0,
         'reading_error_count': 0,
         'pcie_slot_index': 9,
+        'ready': 0,
         }
     if objpath in configs:
         configs[objpath].append(config)
