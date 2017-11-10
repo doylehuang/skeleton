@@ -559,7 +559,7 @@ if __name__ == '__main__':
     bmchealth_check_boot_spi()
     bmchealth_check_log_rollover()
     glib.timeout_add_seconds(5,bmchealth_check_network)
-    glib.timeout_add_seconds(5,bmchealth_check_i2c, 5)
+    glib.timeout_add_seconds(60,bmchealth_check_i2c, 5)
     glib.timeout_add_seconds(5,bmchealth_check_memory_utilization)
     glib.timeout_add_seconds(20,bmchealth_check_empty_invalid_fru)
     #glib.timeout_add_seconds(5,bmchealth_check_CPU_utilization)
