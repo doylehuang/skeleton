@@ -410,6 +410,7 @@ def _add_m2_temperature_sensor(configs, index, sensornumber):
         'reading_error_count': 0,
         'pcie_slot_index': 9,
         'ready': 0,
+        'mapping': '/org/openbmc/control/pcie/slot2',
         }
     if objpath in configs:
         configs[objpath].append(config)
@@ -769,6 +770,7 @@ def _add_fpga1_sensor(configs, index, sensornumber, sensor_name, bus_number):
         'status_change_count': 0,
         'reading_error_count': 0,
         'pcie_slot_index': 10,
+        'mapping': '/org/openbmc/control/pcie/slot3',
         }
     if objpath in configs:
         configs[objpath].append(config)
@@ -796,6 +798,7 @@ def _add_fpga2_sensor(configs, index, sensornumber, sensor_name, bus_number):
         'status_change_count': 0,
         'reading_error_count': 0,
         'pcie_slot_index': 10,
+        'mapping': '/org/openbmc/control/pcie/slot3',
         }
     if objpath in configs:
         configs[objpath].append(config)
