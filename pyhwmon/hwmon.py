@@ -233,18 +233,18 @@ class Hwmons(SensorManager):
 		if hwmon.has_key('ready') and hwmon['ready'] == 0:
 			plx_ready = 0
 			gpu_ready = 0
+			pcie_ready = 0
 			try:
-				plx_ready = self.objects["/org/openbmc/sensors/pex/pex"].Get(HwmonSensor.IFACE_NAME,'ready')
-				gpu_ready = self.objects["/org/openbmc/sensors/gpu/gpu_temp"].Get(HwmonSensor.IFACE_NAME,'ready')
+				plx_ready = self.objects["/org/openbmc/sensors/pex/pex"].Get(HwmonSensor.IFACE_NAME, 'ready')
+				gpu_ready = self.objects["/org/openbmc/sensors/gpu/gpu_temp"].Get(HwmonSensor.IFACE_NAME, 'ready')
+				pcie_ready = self.objects["/org/openbmc/sensors/M2/M2_TMP"].Get(HwmonSensor.IFACE_NAME, 'ready')
 			except:
 				pass
-			if plx_ready == 1 and gpu_ready == 1:
+			if plx_ready == 1 and gpu_ready == 1 and pcie_ready == 1:
 				hwmon['ready'] = 1
 			else:
 				return True
 		if hwmon.has_key('sensornumber'):
-			if hwmon['sensornumber'] >= 0xA1 and hwmon['sensornumber']<= 0xA8:
-				return True
 			if hwmon['sensornumber'] not in self.check_subsystem_health:
 				self.check_subsystem_health[hwmon['sensornumber']] = 1
 			if raw_value == -1 and self.check_subsystem_health[hwmon['sensornumber']] == 1 and self.current_pgood==1:
