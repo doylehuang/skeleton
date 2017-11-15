@@ -109,6 +109,8 @@ class Hwmons(SensorManager):
 		self.check_subsystem_health = {}
 		self.retry_subsystem_health = {}
 		self.check_entity_mapping =  {}
+		self.entity_list = {}
+		self.check_entity_list_flag = 0
 		self.scanDirectory()
 		self.pmbus1_hwmon = ""
 		self.pmbus2_hwmon = ""
@@ -206,8 +208,18 @@ class Hwmons(SensorManager):
 
 		return current_state
 
-	def entity_presence_check(self,objpath,hwmon,raw_value):
+	def sensor_entity_presence_check(self,objpath,hwmon):
 		entity_presence_obj_path = "/org/openbmc/sensors/entity_presence"
+		if hwmon['monitor_entity'] == 1:
+			return True
+		if not os.path.isfile(hwmon['device_node']):
+			return False
+		hwmon['monitor_entity'] = 1
+		raw_value = int(self.readAttribute(hwmon['device_node']))
+		if raw_value == 0:
+			self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', 1)
+		elif raw_value == 1:
+			self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', 0)
 		if hwmon.has_key('entity'):
 			if raw_value == hwmon['inverse']:
 				sensortype = self.objects[entity_presence_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
@@ -220,7 +232,15 @@ class Hwmons(SensorManager):
 			self.check_entity_mapping[objpath] = 1
 		return True
 
-	def subsystem_health_check(self,hwmon,raw_value,delay):
+	def entity_presence_check(self):
+		if self.check_entity_list_flag == 0 and self.current_pgood == 1 and len(self.entity_list) > 0:
+			for objectpath in self.entity_list.keys():
+				ret = self.sensor_entity_presence_check(objectpath , self.entity_list[objectpath])
+				if (ret == False):
+					return
+			self.check_entity_list_flag = 1
+
+	def subsystem_health_check(self,hwmon,raw_value,delay, attribute):
 		check_subsystem_health_obj_path = "/org/openbmc/sensors/management_subsystem_health"
 		if delay == True:
 			sleep(2)
@@ -244,6 +264,12 @@ class Hwmons(SensorManager):
 				hwmon['ready'] = 1
 			else:
 				return True
+		if attribute != None:
+			if not os.path.isfile(attribute) and self.current_pgood == 0:
+				return False
+		else:
+			if self.current_pgood == 0:
+				return False
 		if hwmon.has_key('sensornumber'):
 			if hwmon['sensornumber'] not in self.check_subsystem_health:
 				self.check_subsystem_health[hwmon['sensornumber']] = 1
@@ -456,7 +482,7 @@ class Hwmons(SensorManager):
 					if hwmon['reading_error_count'] < 3:
 						continue
 				hwmon['reading_error_count'] = 0
-				self.subsystem_health_check(hwmon,raw_value,delay=False)
+				self.subsystem_health_check(hwmon,raw_value,delay=False, attribute=attribute)
 				self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value_'+str(hwmon['sensornumber']), raw_value)
 				if raw_value == -1:
 					continue
@@ -535,6 +561,7 @@ class Hwmons(SensorManager):
 
 	def sensor_polling(self, sensor_list, obj_data_man):
 		global pre_pgood
+		self.entity_presence_check()
 		for sensor_set in sensor_list:
 			objpath = sensor_set[0]
 			hwmons = sensor_set[1]
@@ -615,7 +642,10 @@ class Hwmons(SensorManager):
 						delay = True
 					else:
 						delay = False
-					self.subsystem_health_check(hwmon,raw_value,delay)
+					if hwmon_path:
+						self.subsystem_health_check(hwmon,raw_value,delay, hwmon_path)
+					else:
+						self.subsystem_health_check(hwmon,raw_value,delay, hwmon['device_node'])
 
 					# do not check threshold while not reading
 					if 'sensornumber' not in hwmon:
@@ -858,7 +888,6 @@ class Hwmons(SensorManager):
 			return
 
 		sensor_list = []
-		entity_list = {}
 		for objpath, hwmons in System.HWMON_SENSOR_CONFIG.iteritems():
 
 			last_sensor_number = None
@@ -915,20 +944,11 @@ class Hwmons(SensorManager):
 								self.objects[objpath].Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
 					## Monitor Entity Presence only once when AC on
 					if hwmon.has_key('monitor_entity'):
-						if hwmon['monitor_entity'] == 0:
-							raw_value = int(self.readAttribute(hwmon['device_node']))
-							hwmon['monitor_entity'] = 1
-							entity_list[objpath] = [hwmon, raw_value]
-							if raw_value == 0:
-								self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', 1)
-							elif raw_value == 1:
-								self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', 0)
+						if objpath not in self.entity_list:
+							self.entity_list[objpath] = hwmon
 				if hwmon.has_key('poll_interval'):
 					sensor_list.append([objpath, hwmons])
 				self.sensors[objpath]=True
-		if len(entity_list) > 0:
-			for objectpath in entity_list.keys():
-				self.entity_presence_check(objectpath , entity_list[objectpath][0], entity_list[objectpath][1])
 		if (len(sensor_list)>0):
 			print sensor_list
 			glib.timeout_add_seconds(5,self.sensor_polling,sensor_list, self.GetManagedObjects())
@@ -992,7 +1012,7 @@ class Hwmons(SensorManager):
 						if objpath not in self.check_subsystem_health:
 							self.check_subsystem_health[objpath] = 1
 						if System.HWMON_CONFIG[dpath]['names'][attribute]['object_path'] not in obj_mapping:
-							if self.check_subsystem_health[objpath] == 1:
+							if self.check_subsystem_health[objpath] == 1 and self.current_pgood==1:
 								try:
 									sensortype = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensor_type')
 									sensor_number = self.objects[check_subsystem_health_obj_path].Get(HwmonSensor.IFACE_NAME, 'sensornumber')
