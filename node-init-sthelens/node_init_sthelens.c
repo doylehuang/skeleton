@@ -112,29 +112,9 @@ main(int argc, char *argv[])
     for(i=1; i<=PSU_NUM; i++)
     {
 	    /* Liteon PS-2162-1F Solution */
-	    sprintf(buff_path, "i2craw.exe %d 0x58 -w \"0x05 0x04 0x01 0x1b 0x7c 0xff\"", PHYSICAL_I2C+i);
+	    sprintf(buff_path, "i2craw.exe %d 0x58 -f -w \"0x05 0x04 0x01 0x1b 0x7c 0xff\"", PHYSICAL_I2C+i);
 	    printf("%s\n", buff_path);
 	    system(buff_path);
-
-	    /* Add new pmbus device */
-        sprintf(buff_path, "echo pmbus 0x58 > /sys/bus/i2c/devices/i2c-%d/new_device", PHYSICAL_I2C+i);
-        printf("%s\n", buff_path);
-        system(buff_path);
-    }
-
-    /* Init lm25066 node */
-    for(i=0; i<LM25066_NUM_1; i++)
-    {
-        sprintf(buff_path, "echo lm25066 0x%x > /sys/bus/i2c/devices/i2c-%d/new_device",0x10+i, LM25066_I2C);
-        printf("%s\n", buff_path);
-        system(buff_path);
-    }
-
-    for(i=0; i<LM25066_NUM_2; i++)
-    {
-        sprintf(buff_path, "echo lm25066 0x%x > /sys/bus/i2c/devices/i2c-%d/new_device",0x40+i, LM25066_I2C);
-        printf("%s\n", buff_path);
-        system(buff_path);
     }
 
     /* Init PCIE slot present GPIO*/
