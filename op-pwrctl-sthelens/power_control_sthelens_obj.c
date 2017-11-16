@@ -14,6 +14,24 @@
 #include <unistd.h>
 #include <errno.h>
 
+struct Device {
+	const char *device;
+	const char *driver;
+	uint8_t bound : 1;
+};
+
+enum GPIODirection {
+	GPIO_IN,
+	GPIO_OUT,
+};
+
+struct GPIOExport {
+	const int pin;
+	const enum GPIODirection dir;
+	uint8_t exported : 1;
+	uint8_t configured : 1;
+};
+
 /* ------------------------------------------------------------------------- */
 static const gchar* dbus_object_path = "/org/openbmc/control";
 static const gchar* instance_name = "power0";
@@ -58,40 +76,159 @@ power_led_init()
 	}
 }
 
-static void bind_device_to_driver(const char *device, const char *driver)
+static void bind_devices(void)
 {
-	char path[64] = {0};
+	/* NOTE the order must conform with DTS, otherwise virtual I2C bus numbers
+	 * may change.
+	 */
+	static struct Device devs[] = {
+		{ .device = "2-0076", .driver = "/sys/bus/i2c/drivers/pca954x", },
+		{ .device = "2-0075", .driver = "/sys/bus/i2c/drivers/pca954x", },
+		{ .device = "3-0070", .driver = "/sys/bus/i2c/drivers/pca954x", },
+	};
+
+	int i = 0;
+	struct Device *dev = NULL;
+	char buff[64] = {0};
 	struct stat stat = {0};
 	FILE *fp = NULL;
 
-	if (64 <= snprintf(path, 64, "%s/%s", driver, device)) {
-		printf("ERROR not enough space to generate device path\n");
-		return;
+	for (i = 0; i < sizeof(devs) / sizeof(struct Device); i++) {
+		dev = &devs[i];
+		if (!dev->bound) {
+			/* Test whether device is already bound. */
+
+			if (64 <= snprintf(buff, 64, "%s/%s", dev->driver, dev->device)) {
+				printf("ERROR not enough space for device path\n");
+				continue;
+			}
+
+			if (!lstat(buff, &stat)) {
+				dev->bound = 1;
+				continue;
+			}
+
+			if (errno != ENOENT) {
+				printf("ERROR on lstat(%s): %s\n", buff, strerror(errno));
+				continue;
+			}
+
+			/* Bind device to specified driver. */
+
+			if (64 <= snprintf(buff, 64, "%s/bind", dev->driver)) {
+				printf("ERROR not enough space for bind path\n");
+				continue;
+			}
+
+			if (!(fp = fopen(buff, "w"))) {
+				printf("ERROR on fopen(%s): %s\n", buff, strerror(errno));
+				continue;
+			}
+
+			fwrite(dev->device, sizeof(char), strlen(dev->device), fp);
+
+			fclose(fp);
+		}
 	}
+}
 
-	if (!lstat(path, &stat)) {
-		// device already binds with driver
-		return;
+static void export_gpios(void)
+{
+	static struct GPIOExport gpios[] = {
+		// GPU
+		{ .pin = 236, .dir = GPIO_IN, },
+		{ .pin = 237, .dir = GPIO_IN, },
+		{ .pin = 238, .dir = GPIO_IN, },
+		{ .pin = 239, .dir = GPIO_IN, },
+		{ .pin = 240, .dir = GPIO_IN, },
+		{ .pin = 241, .dir = GPIO_IN, },
+		{ .pin = 242, .dir = GPIO_IN, },
+		{ .pin = 243, .dir = GPIO_IN, },
+		// PCIE present
+		{ .pin = 252, .dir = GPIO_IN, },
+		{ .pin = 253, .dir = GPIO_IN, },
+		{ .pin = 254, .dir = GPIO_IN, },
+		{ .pin = 255, .dir = GPIO_IN, },
+	};
+
+	int i = 0;
+	struct GPIOExport *gpio = NULL;
+	char buff[64] = {0};
+	struct stat stat = {0};
+	FILE *fp = NULL;
+
+	for (i = 0; i < sizeof(gpios) / sizeof(struct GPIOExport); i++) {
+		gpio = &gpios[i];
+		if (!gpio->exported) {
+			/* Test whether GPIO is exported. */
+
+			if (64 <= snprintf(buff, 64, "/sys/class/gpio/gpio%d", gpio->pin)) {
+				printf("ERROR not enough space for gpio path\n");
+				continue;
+			}
+
+			if (!lstat(buff, &stat)) {
+				gpio->exported = 1;
+				goto config;
+			}
+
+			if (errno != ENOENT) {
+				printf("ERROR on lstat(%s): %s\n", buff, strerror(errno));
+				continue;
+			}
+
+			/* Export GPIO. */
+
+			if (!(fp = fopen("/sys/class/gpio/export", "w"))) {
+				printf("ERROR on fopen(/sys/class/gpio/export): %s\n",
+						strerror(errno));
+				continue;
+			}
+
+			fprintf(fp, "%d", gpio->pin);
+
+			fclose(fp);
+		}
+
+config:
+		if (!gpio->configured) {
+			/* Test whether GPIO direction conforms with configuration. */
+
+			if (!(fp = fopen("/sys/class/gpio/gpio%d/direction", "r"))) {
+				printf("ERROR on fopen(/sys/class/gpio/gpio%d/direction): %s\n",
+						strerror(errno));
+				continue;
+			}
+
+			if (!fgets(buff, 63, fp)) {
+				printf("ERROR on fgets(/sys/class/gpio/gpio%d/direction): %s\n",
+						strerror(errno));
+				continue;
+			}
+
+			fclose(fp);
+
+			if (gpio->dir == GPIO_IN && !strncmp("in", buff, 2)) {
+				gpio->configured = 1;
+				continue;
+			} else if (gpio->dir == GPIO_OUT && !strncmp("out", buff, 3)) {
+				gpio->configured = 1;
+				continue;
+			}
+
+			/* Configure GPIO direction. */
+
+			if (!(fp = fopen("/sys/class/gpio/gpio%d/direction", "w"))) {
+				printf("ERROR on fopen(/sys/class/gpio/gpio%d/direction): %s\n",
+						strerror(errno));
+				continue;
+			}
+
+			fprintf(fp, (gpio->dir == GPIO_IN) ? "in" : "out");
+
+			fclose(fp);
+		}
 	}
-
-	if (errno != ENOENT) {
-		printf("ERROR failed to lstat(%s): %s\n", path, strerror(errno));
-		return;
-	}
-
-	if (64 <= snprintf(path, 64, "%s/bind", driver)) {
-		printf("ERROR not enough space to generate bind path\n");
-		return;
-	}
-
-	if (!(fp = fopen(path, "w"))) {
-		printf("ERROR can't open %s: %s\n", path, strerror(errno));
-		return;
-	}
-
-	fwrite(device, sizeof(char), strlen(device), fp);
-
-	fclose(fp);
 }
 
 // TODO:  Change to interrupt driven instead of polling
@@ -125,10 +262,8 @@ poll_pgood(gpointer user_data)
 
 	if(rc == GPIO_OK) {
 		if (gpio == 1) {
-			// NOTE the order must conform with DTS, otherwise serial numbers may change.
-			bind_device_to_driver("2-0076", "/sys/bus/i2c/drivers/pca954x");
-			bind_device_to_driver("2-0075", "/sys/bus/i2c/drivers/pca954x");
-			bind_device_to_driver("3-0070", "/sys/bus/i2c/drivers/pca954x");
+			bind_devices();
+			export_gpios();
 		}
 		//if changed, set property and emit signal
 		if(gpio != control_power_get_pgood(control_power)) {
