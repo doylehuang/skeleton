@@ -82,6 +82,16 @@ static void bind_devices(void)
 	 * may change.
 	 */
 	static struct Device devs[] = {
+		{ .device = "0-0010", .driver = "/sys/bus/i2c/drivers/lm25066", },
+		{ .device = "0-0011", .driver = "/sys/bus/i2c/drivers/lm25066", },
+		{ .device = "0-0040", .driver = "/sys/bus/i2c/drivers/lm25066", },
+		{ .device = "0-0041", .driver = "/sys/bus/i2c/drivers/lm25066", },
+		{ .device = "0-0042", .driver = "/sys/bus/i2c/drivers/lm25066", },
+		{ .device = "0-0043", .driver = "/sys/bus/i2c/drivers/lm25066", },
+		{ .device = "0-0044", .driver = "/sys/bus/i2c/drivers/lm25066", },
+		{ .device = "0-0045", .driver = "/sys/bus/i2c/drivers/lm25066", },
+		{ .device = "0-0046", .driver = "/sys/bus/i2c/drivers/lm25066", },
+		{ .device = "0-0047", .driver = "/sys/bus/i2c/drivers/lm25066", },
 		{ .device = "2-0076", .driver = "/sys/bus/i2c/drivers/pca954x", },
 		{ .device = "2-0075", .driver = "/sys/bus/i2c/drivers/pca954x", },
 		{ .device = "3-0070", .driver = "/sys/bus/i2c/drivers/pca954x", },
