@@ -109,33 +109,17 @@ void check_cable_status()
 {
 	int i = 0, j = 0;
 	int cable_failed = 0;
-	char buff[1024] = "";
-	char cmd_assert[1024] = "/usr/bin/eventctl.py add Critical 0x25 0x8a 0x6f 0xa1 --event_data_2 0x1F --event_data_3 ";
-	char cmd_deassert[1024] = "/usr/bin/eventctl.py add Critical 0x25 0x8a 0xef 0xa1 --event_data_2 0x1F --event_data_3 ";
-	int flag[8] = {0};
-	int cable_index = 0;
 
 	while(1) {
 		for(i=0; i<MAX_CABLE_SW; i++) {
 			for(j=0; j<MAX_CABLE_PORT; j++) {
-				cable_index = i*2+j;
 				cable_failed = read_cable_status(i, j);
 				if(cable_failed) {
 					set_cable_led(i, j, "0"); //set on cable led
 					set_present(i, j, "1");
-					if(flag[cable_index] == 0){
-						sprintf(buff, "%s %d", cmd_assert, cable_index+1);
-						flag[cable_index] = 1;
-						system(buff);
-					}
 				} else {
 					set_cable_led(i, j, "1"); //set off cable led
 					set_present(i, j, "0");
-					if(flag[cable_index] == 1){
-						sprintf(buff, "%s %d", cmd_deassert, cable_index+1);
-						flag[cable_index] = 0;
-						system(buff);
-					}
 				}
 			}
 		}
