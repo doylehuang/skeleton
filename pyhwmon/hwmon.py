@@ -212,10 +212,11 @@ class Hwmons(SensorManager):
 		entity_presence_obj_path = "/org/openbmc/sensors/entity_presence"
 		if hwmon['monitor_entity'] == 1:
 			return True
-		if not os.path.isfile(hwmon['device_node']):
-			return False
 		hwmon['monitor_entity'] = 1
-		raw_value = int(self.readAttribute(hwmon['device_node']))
+		if not os.path.isfile(hwmon['device_node']):
+			raw_value = hwmon['inverse']
+		else:
+			raw_value = int(self.readAttribute(hwmon['device_node']))
 		if raw_value == 0:
 			self.objects[objpath].Set(SensorValue.IFACE_NAME, 'value', 1)
 		elif raw_value == 1:
@@ -868,6 +869,10 @@ class Hwmons(SensorManager):
 				for prop in hwmon.keys():
 					if (IFACE_LOOKUP.has_key(prop)):
 						self.objects[objpath].Set(IFACE_LOOKUP[prop],prop,hwmon[prop])
+
+				if hwmon.has_key('monitor_entity'):
+						if objpath not in self.entity_list:
+							self.entity_list[objpath] = hwmon
 
 				self.sensors[objpath]=True
 				self.threshold_state[objpath] = "NORMAL"
