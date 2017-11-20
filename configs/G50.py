@@ -562,7 +562,7 @@ def _add_cable_led(configs, index, gpio):
         'standby_monitor': True,
         'units': '',
         'entity': 0x1F,
-        'index': index+1,
+        'index': index,
         'inverse': 0,
         'monitor_entity': 0,
         }]
@@ -1016,14 +1016,10 @@ _add_pex9797(HWMON_SENSOR_CONFIG, 2, 0x38)
 _add_pex9797(HWMON_SENSOR_CONFIG, 3, 0x39)
 _add_pex9797(HWMON_SENSOR_CONFIG, 4, 0x3A)
 
-_add_cable_led(SENSOR_MONITOR_CONFIG, 0, 279)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 1, 283)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 2, 287)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 3, 291)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 4, 263)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 5, 267)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 6, 271)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 7, 275)
+_add_cable_led(SENSOR_MONITOR_CONFIG, 1, 279)
+_add_cable_led(SENSOR_MONITOR_CONFIG, 3, 287)
+_add_cable_led(SENSOR_MONITOR_CONFIG, 5, 263)
+_add_cable_led(SENSOR_MONITOR_CONFIG, 7, 271)
 _add_event_log_sensor(SENSOR_MONITOR_CONFIG, 0x80)
 _add_ntp_status_sensor(SENSOR_MONITOR_CONFIG, 0x81)
 _add_bmc_health_sensor(SENSOR_MONITOR_CONFIG, 0x82)
