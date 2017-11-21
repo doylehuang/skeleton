@@ -41,7 +41,7 @@ SUBDIRS = hacks \
 	  gpu_utility \
 	  eventctl \
 	  pyproperty_file_ctl \
-      pysmbus
+	  pysmbus
 
 REVERSE_SUBDIRS = $(shell echo $(SUBDIRS) $(GDBUS_APPS) $(SDBUS_APPS) | tr ' ' '\n' | tac |tr '\n' ' ')
 
