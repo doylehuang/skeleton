@@ -157,7 +157,7 @@ APPS = {
     'cable_led' : {
         'system_state'    : 'BMC_STARTING',
         'start_process'   : True,
-        'monitor_process' : True,
+        'monitor_process' : False,
         'process_name'    : 'cable_led.exe',
     },
     'netman' : {
@@ -1016,10 +1016,6 @@ _add_pex9797(HWMON_SENSOR_CONFIG, 2, 0x38)
 _add_pex9797(HWMON_SENSOR_CONFIG, 3, 0x39)
 _add_pex9797(HWMON_SENSOR_CONFIG, 4, 0x3A)
 
-_add_cable_led(SENSOR_MONITOR_CONFIG, 1, 279)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 3, 287)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 5, 263)
-_add_cable_led(SENSOR_MONITOR_CONFIG, 7, 271)
 _add_event_log_sensor(SENSOR_MONITOR_CONFIG, 0x80)
 _add_ntp_status_sensor(SENSOR_MONITOR_CONFIG, 0x81)
 _add_bmc_health_sensor(SENSOR_MONITOR_CONFIG, 0x82)

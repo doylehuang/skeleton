@@ -109,21 +109,24 @@ void check_cable_status()
 {
 	int i = 0, j = 0;
 	int cable_failed = 0;
+	char buff[1024] = "";
+	char cmd_assert[1024] = "/usr/bin/eventctl.py add Critical 0x25 0x8a 0x6f 0xa1 --event_data_2 0x1F --event_data_3 ";
+	int cable_index = 0;
 
-	while(1) {
-		for(i=0; i<MAX_CABLE_SW; i++) {
-			for(j=0; j<MAX_CABLE_PORT; j++) {
-				cable_failed = read_cable_status(i, j);
-				if(cable_failed) {
-					set_cable_led(i, j, "0"); //set on cable led
-					set_present(i, j, "1");
-				} else {
-					set_cable_led(i, j, "1"); //set off cable led
-					set_present(i, j, "0");
-				}
+	for(i=0; i<MAX_CABLE_SW; i++) {
+		for(j=0; j<MAX_CABLE_PORT; j++) {
+			cable_index = i*2+j;
+			cable_failed = read_cable_status(i, j);
+			if(cable_failed) {
+				set_cable_led(i, j, "0"); //set on cable led
+				set_present(i, j, "1");
+				sprintf(buff, "%s %d", cmd_assert, cable_index+1);
+				system(buff);
+			} else {
+				set_cable_led(i, j, "1"); //set off cable led
+				set_present(i, j, "0");
 			}
 		}
-		sleep(30);
 	}
 }
 
@@ -197,11 +200,28 @@ static void save_pid (void) {
     fclose(pidfile);
 }
 
+int read_file(char *path)
+{
+	FILE *fp1 = NULL;
+	int val = 0;
+	fp1= fopen(path, "r");
+	fscanf(fp1, "%d", &val);
+	fclose(fp1);
+	return val;
+}
+
 int main(gint argc, gchar *argv[])
 {
+	int Cable_state = 0;
     save_pid();
 	init_cable_gpio_mapping();
 	open_gpio();
+	while(1){
+		Cable_state = read_file("/sys/class/gpio/gpio390/value");
+		if(Cable_state == 0)
+			break;
+		sleep(1);
+	}
 	check_cable_status();
 	return 0;
 }
