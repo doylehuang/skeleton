@@ -163,7 +163,8 @@ static void export_gpios(void)
 
 	int i = 0;
 	struct GPIOExport *gpio = NULL;
-	char buff[64] = {0};
+	char path[64] = {0};
+	char buff[4] = {0};
 	struct stat stat = {0};
 	FILE *fp = NULL;
 
@@ -172,18 +173,18 @@ static void export_gpios(void)
 		if (!gpio->exported) {
 			/* Test whether GPIO is exported. */
 
-			if (64 <= snprintf(buff, 64, "/sys/class/gpio/gpio%d", gpio->pin)) {
+			if (64 <= snprintf(path, 64, "/sys/class/gpio/gpio%d", gpio->pin)) {
 				printf("ERROR not enough space for gpio path\n");
 				continue;
 			}
 
-			if (!lstat(buff, &stat)) {
+			if (!lstat(path, &stat)) {
 				gpio->exported = 1;
 				goto config;
 			}
 
 			if (errno != ENOENT) {
-				printf("ERROR on lstat(%s): %s\n", buff, strerror(errno));
+				printf("ERROR on lstat(%s): %s\n", path, strerror(errno));
 				continue;
 			}
 
@@ -204,15 +205,18 @@ config:
 		if (!gpio->configured) {
 			/* Test whether GPIO direction conforms with configuration. */
 
-			if (!(fp = fopen("/sys/class/gpio/gpio%d/direction", "r"))) {
-				printf("ERROR on fopen(/sys/class/gpio/gpio%d/direction): %s\n",
-						strerror(errno));
+			if (64 <= snprintf(path, 64, "/sys/class/gpio/gpio%d/direction", gpio->pin)) {
+				printf("ERROR not enough space for gpio direction path\n");
 				continue;
 			}
 
-			if (!fgets(buff, 63, fp)) {
-				printf("ERROR on fgets(/sys/class/gpio/gpio%d/direction): %s\n",
-						strerror(errno));
+			if (!(fp = fopen(path, "r"))) {
+				printf("ERROR on fopen(%s): %s\n", path, strerror(errno));
+				continue;
+			}
+
+			if (!fgets(buff, 3, fp)) {
+				printf("ERROR on fgets(%s): %s\n", path, strerror(errno));
 				continue;
 			}
 
@@ -228,9 +232,8 @@ config:
 
 			/* Configure GPIO direction. */
 
-			if (!(fp = fopen("/sys/class/gpio/gpio%d/direction", "w"))) {
-				printf("ERROR on fopen(/sys/class/gpio/gpio%d/direction): %s\n",
-						strerror(errno));
+			if (!(fp = fopen(path, "w"))) {
+				printf("ERROR on fopen(%s): %s\n", path, strerror(errno));
 				continue;
 			}
 
