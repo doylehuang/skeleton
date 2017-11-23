@@ -61,10 +61,7 @@ int pmbus_scan()
             if (rc == 0) {
                 res = i2c_smbus_read_byte(file);
                 if (res >= 0) {
-                    sprintf(buff_path, "echo 0x58 > /sys/bus/i2c/devices/i2c-%d/delete_device", PHYSICAL_I2C+i);
-                    system(buff_path);
-                    sleep(1);
-                    sprintf(buff_path, "echo pmbus 0x58 > /sys/bus/i2c/devices/i2c-%d/new_device", PHYSICAL_I2C+i);
+                    sprintf(buff_path, "echo %d-0058 > /sys/bus/i2c/drivers/pmbus/bind", bus);
                     system(buff_path);
                 }
             }

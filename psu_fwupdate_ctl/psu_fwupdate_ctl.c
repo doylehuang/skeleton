@@ -260,36 +260,17 @@ static int psu_i2c_raw_access(int i2c_bus, int i2c_addr, int cmd)
 static void disable_psu_bus_unbind(int i2c_bus, int i2c_addr)
 {
 	char cmd[200] = {0};
-	sprintf(cmd, "echo %d-00%x > /sys/bus/i2c/devices/%d-00%x/driver/unbind",
-		i2c_bus, i2c_addr, i2c_bus, i2c_addr);
+	sprintf(cmd, "echo %d-00%x > /sys/bus/i2c/drivers/pmbus/unbind",
+		i2c_bus, i2c_addr);
 	system(cmd);
 }
 
 static void enable_psu_bus_bind(int i2c_bus, int i2c_addr)
 {
-
-	char file_path[100];
-	char buffer[100];
-	FILE *pFile;
-
-	sprintf(file_path, "/sys/bus/i2c/devices/i2c-%d/delete_device",i2c_bus);
-	pFile = fopen(file_path,"w" );
-	if( pFile != NULL ) {
-		buffer[0] = 0;
-		sprintf(buffer, "0x%x",i2c_addr);
-		fwrite(buffer,1,strlen(buffer),pFile);
-	}
-	fclose(pFile);
-
-	file_path[0] = 0;
-	sprintf(file_path, "//sys/bus/i2c/devices/i2c-%d/new_device",i2c_bus);
-	pFile = fopen(file_path,"w" );
-	if( pFile != NULL ) {
-		buffer[0] = 0;
-		sprintf(buffer, "pmbus 0x%x",i2c_addr);
-		fwrite(buffer,1,strlen(buffer),pFile);
-	}
-	fclose(pFile);
+	char cmd[200] = {0};
+	sprintf(cmd, "echo %d-00%x > /sys/bus/i2c/drivers/pmbus/bind",
+		i2c_bus, i2c_addr);
+	system(cmd);
 }
 
 static int write_psu_fwdata(int i2c_bus, int i2c_addr)
