@@ -507,21 +507,9 @@ def watch_redfish():
             pass
     return True
 
-def watch_event_service():
-    watchdog_file_path = "/run/obmc/watch_event_service"
-    try:
-        bmclogevent_ctl.bmclogevent_get_log_rollover()
-    except:
-        print 'Unexpected error:', sys.exc_info()[0]
-    else:
-        if os.path.exists(watchdog_file_path):
-            os.remove(watchdog_file_path)
-    return True
-
 def bmchealth_kick_watchdog():
 
     watch_redfish()
-    watch_event_service()
 
     return True
 

@@ -22,7 +22,7 @@ import bmclogevent_ctl
 import traceback
 from time import sleep
 import property_file_ctl
-from bmchealth_handler import watch_redfish, watch_event_service
+from bmchealth_handler import watch_redfish
 from sensor_manager2 import *
 import fcntl
 import signal
@@ -1048,7 +1048,6 @@ class Hwmons(SensorManager):
 
 	def kickWatchdog(self):
 		watch_redfish()
-		watch_event_service()
 		if os.path.exists(WATCHDOG_FILE_PATH):
 			os.remove(WATCHDOG_FILE_PATH)
 		return True
