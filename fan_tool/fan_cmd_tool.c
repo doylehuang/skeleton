@@ -15,6 +15,7 @@
 #define FAN_SHM_PATH "skeleton/fan_algorithm2"
 #define MAX_CLOSELOOP_SENSOR_NUM (8)
 #define MAX_CLOSELOOP_PROFILE_NUM (8)
+#define MAX_OPENLOOP_SENSOR_NUM (8)
 
 
 struct st_fan_closeloop_par {
@@ -56,7 +57,10 @@ struct st_fan_parameter {
 	int max_fanspeed;
 	int min_fanspeed;
 	int debug_msg_info_en; //0:close fan alogrithm debug message; 1: open fan alogrithm debug message
+	int groups_openloop_sensor_reading[MAX_OPENLOOP_SENSOR_NUM];
+	int openloop_count;
 };
+
 
 
 
@@ -175,12 +179,16 @@ void show_fio_sensor_temp(void)
 	printf("\n");
 	print_datetime();
 	printf("==== FIO SENSOR TEMP LIST=======\n");
-	val_fio_1 = read_file("/sys/class/hwmon/hwmon1/temp1_input");
-	val_fio_2 = read_file("/sys/class/hwmon/hwmon2/temp1_input");
 	print_datetime();
+
+	if (g_fan_para_shm->openloop_count < 2) {
+		printf("FIO Temp, 0  ,  0,\n");
+		return ;
+	}
+
 	printf("FIO Temp, %.2f  ,  %.2f,\n", 
-		(double) val_fio_1/1000,
-		(double) val_fio_2/1000);
+		(double) g_fan_para_shm->groups_openloop_sensor_reading[0]/1000,
+		(double) g_fan_para_shm->groups_openloop_sensor_reading[1]/1000);
 }
 
 void show_fan_tacho_rpm(void)

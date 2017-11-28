@@ -139,6 +139,19 @@ class SystemManager(DbusProperties,DbusObjectManager):
 
 	@dbus.service.method(DBUS_NAME,
 		in_signature='s', out_signature='s')
+	def convertHwmonPath(self, path):
+		split_p = path.split(":")
+		if len(split_p) < 2:
+			return ""
+		for dirname, dirnames, filenames in os.walk("/sys/devices/platform/ahb"):
+			if dirname.find(split_p[0])>=0:
+				hwmon_path = dirname + "/" + split_p[1]
+				if os.path.exists(hwmon_path):
+					return hwmon_path
+		return path
+
+	@dbus.service.method(DBUS_NAME,
+		in_signature='s', out_signature='s')
 	def getFanControlParams(self, key):
 		if ('FAN_ALGORITHM_CONFIG' not in dir(System) or key == None):
 			return ""
@@ -169,7 +182,12 @@ class SystemManager(DbusProperties,DbusObjectManager):
 				return ""
 
 			for i in range(len(System.FAN_ALGORITHM_CONFIG[key])):
-				s_params+=System.FAN_ALGORITHM_CONFIG[key][i] + ";"
+				if System.FAN_ALGORITHM_CONFIG[key][i].find("HWMON_DEV:")>=0:
+					hwmon_dev = System.FAN_ALGORITHM_CONFIG[key][i].replace("HWMON_DEV:", "")
+					hwmon_dev_path = self.convertHwmonPath(hwmon_dev)
+					s_params+=hwmon_dev_path + ";"
+				else:
+					s_params+=System.FAN_ALGORITHM_CONFIG[key][i] + ";"
 		except:
 			return ""
 		return s_params

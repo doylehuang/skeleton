@@ -15,7 +15,7 @@
 #define I2C_CLIENT_PEC          0x04    /* Use Packet Error Checking */
 #define I2C_M_RECV_LEN          0x0400  /* length will be first received byte */
 
-#define MAX_PATH_LEN 70
+#define MAX_PATH_LEN 150
 #define MAX_SENSOR_NUM 40
 #define SAMPLING_N  20
 
@@ -28,6 +28,8 @@
 #define MAX_CLOSELOOP_RECORD (10)
 #define MAX_CLOSELOOP_SENSOR_NUM (8)
 #define MAX_CLOSELOOP_PROFILE_NUM (8)
+#define MAX_OPENLOOP_SENSOR_NUM (8)
+#define NOTIFY_OPENLOOP_GROUP (-1)
 
 
 struct st_closeloop_obj_data {
@@ -93,6 +95,8 @@ struct st_fan_parameter {
 	int max_fanspeed;
 	int min_fanspeed;
 	int debug_msg_info_en; //0:close fan alogrithm debug message; 1: open fan alogrithm debug message
+	int groups_openloop_sensor_reading[MAX_OPENLOOP_SENSOR_NUM];
+	int openloop_count;
 };
 
 
@@ -494,6 +498,8 @@ static int get_max_sensor_reading_file(struct st_fan_obj_path_info *fan_obj, int
 				flag = -1;
 			if (index >=0) {
 				g_fan_para_shm->closeloop_param[index].groups_sensor_reading[i] =  sensor_reading;
+			} else if (index == NOTIFY_OPENLOOP_GROUP) {
+				g_fan_para_shm->groups_openloop_sensor_reading[i] =  sensor_reading;
 			}
 			max_value = (max_value < sensor_reading)? sensor_reading : max_value;
 		}
@@ -748,7 +754,7 @@ static int fan_control_algorithm_monitor(void)
 			g_Openloopspeed = 0;
 			while (t_header != NULL) {
 				int t_reading;
-				t_reading = get_max_sensor_reading_file(t_header, -1);
+				t_reading = get_max_sensor_reading_file(t_header, NOTIFY_OPENLOOP_GROUP);
 				g_fan_para_shm->openloop_sensor_reading =(double) t_reading/1000;
 				calculate_openloop(g_fan_para_shm->openloop_sensor_reading);
 				openloop_reading = (openloop_reading<t_reading? t_reading:openloop_reading);
@@ -1095,6 +1101,7 @@ static int initial_fan_config(sd_bus *bus)
 			for (i = 0; i<reponse_len ; i++)
 				strcpy(t_fan_obj->path[i], reponse_data[i]);
 		}
+		g_fan_para_shm->openloop_count = t_fan_obj->size;
 
 		prefix_openloop[0] = 0;
 		sprintf(prefix_openloop, "FAN_DBUS_INTF_LOOKUP#OPEN_LOOP_GROUPS_%d", obj_count);
@@ -1202,6 +1209,7 @@ static void inital_fan_pid_shm()
 		g_fan_para_shm->closeloop_count = 0;
 		g_fan_para_shm->openloop_sensor_offset = 0;
 		g_fan_para_shm->debug_msg_info_en = 0;
+		g_fan_para_shm->openloop_count = 0;
 	}
 }
 

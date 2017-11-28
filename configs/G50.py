@@ -1148,8 +1148,8 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'OPEN_LOOP_GROUPS_1':
         [
-            "/sys/class/hwmon/hwmon1/temp1_input",
-            "/sys/class/hwmon/hwmon2/temp1_input",
+            "HWMON_DEV:0-0049:temp1_input",
+            "HWMON_DEV:0-004a:temp1_input",
             #Thermal team only watch temp4 ambinet
         ],
 #Profile #2 GPU1~8, Treal
@@ -1211,7 +1211,7 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_4':
         [
-            "/sys/class/hwmon/hwmon12/temp2_input",
+            "HWMON_DEV:30-004c:temp2_input",
             "SensorNumberList", #notfity following setting about SensorNumberList
             "0x75", #base sensor number
             "1", #releate sensor list size
