@@ -218,7 +218,7 @@ static void event_show(uint64_t timestamp)
         }
     }
     fclose(fp);
-    printf("%04s | %16s | %8s | %s\n", id, created, severity, message);
+    printf("%04s | %19s | %8s | %s\n", id, created, severity, message);
 }
 
 static void event_show_header(void)

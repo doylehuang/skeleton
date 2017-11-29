@@ -77,9 +77,9 @@ def clear_logs(_):
 def list_logs(_):
     event_manager = EventManager()
     events = event_manager.load_events()
-    print('%04s | %16s | %8s | %s' % ('ID', 'TIME', 'SEVERITY', 'MESSAGE'))
+    print('%04s | %19s | %8s | %s' % ('ID', 'TIME', 'SEVERITY', 'MESSAGE'))
     for event in events:
-        print('%04s | %16s | %8s | %s' % (
+        print('%04s | %19s | %8s | %s' % (
             event.record_id,
             event.created,
             event.severity,
