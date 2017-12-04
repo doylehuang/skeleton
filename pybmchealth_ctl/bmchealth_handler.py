@@ -325,12 +325,12 @@ def bmchealth_check_log_rollover(signum=None, frame=None):
         g_previous_log_rollover =0
     if current_log_rollover > g_previous_log_rollover:
         print "Log Log Rollover event"
-        LogEventBmcHealthMessages("Asserted", "Log Rollover","Log Rollover",data={'log_rollover_count':current_log_rollover})
         g_previous_log_rollover = current_log_rollover
+        LogEventBmcHealthMessages("Asserted", "Log Rollover","Log Rollover",data={'log_rollover_count':current_log_rollover})
     if current_log_rollover == 0 and g_previous_log_rollover != 0:
+        g_previous_log_rollover = current_log_rollover
         LogEventBmcHealthMessages("Deasserted", "Log Rollover","Log Rollover",data={'log_rollover_count':0})
         bmclogevent_ctl.bmclogevent_set_value("/org/openbmc/sensors/bmc_health", 0, offset=0xb)
-        g_previous_log_rollover = current_log_rollover
     return True
 
 def bmchealth_check_CPU_utilization():
