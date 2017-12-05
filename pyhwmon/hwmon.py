@@ -471,7 +471,7 @@ class Hwmons(SensorManager):
 				if 'firmware_update' in hwmon:
 					firmware_update_status = property_file_ctl.GetProperty(objpath, 'firmware_update')
 					if (firmware_update_status & (1 << (hwmon['index'] - 1))) > 0:
-						return True
+						continue
 				if attribute:
 					raw_value = int(self.readAttribute(attribute), 16)
 				else:
