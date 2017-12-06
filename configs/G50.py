@@ -1278,7 +1278,7 @@ BMC_LOGEVENT_CONFIG = {
 				},
 			},
 			'Hardware WDT expired': {
-				'Severity': 'Critical',
+				'Severity': 'Warning',
 				'Event Data Information': {
 					'Hardware WDT expired':	[0xA3, None, None],
 				},
@@ -1302,7 +1302,7 @@ BMC_LOGEVENT_CONFIG = {
 				},
 			},
 			'BMC Reset': {
-				'Severity': 'Critical',
+				'Severity': 'OK',
 				'Event Data Information': {
 					'Register/Pin Reset': [0xA8, 0x1, None],
 					'Redfish Reset':      [0xA8, 0x2, None],
@@ -1407,7 +1407,7 @@ BMC_LOGEVENT_CONFIG = {
 				},
 			},
 			'System Event PowerOff': {
-				'Severity': 'Critical',
+				'Severity': 'OK',
 				'Event Data Information': {
 					'System Event PowerOff': [0x01, None, None],
 				},
