@@ -381,7 +381,7 @@ MISC_SENSORS = {
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
 # Set fan_algorithm config
-#   FAN_DBUS_INTF_LOOKUP: {keys:[dbus bus name, dbus interface name]}
+#   FAN_DBUS_INTF_LOOKUP: {keys:[dbus interface name]}
 #   CHASSIS_POWER_STATE: set chassis power state object path
 #   FAN_INPUT_OBJ: set fan input object path
 #   FAN_OUTPUT_OBJ: set fan out object path , eg: hwmon control fan speed or directly use pwm control pwm
@@ -426,36 +426,30 @@ MISC_SENSORS = {
 FAN_ALGORITHM_CONFIG = {
     'FAN_DBUS_INTF_LOOKUP':
     {
-        'CHASSIS_POWER_STATE': ['org.openbmc.control.Chassis', 'org.openbmc.control.Chassis'],
-        #fan0~2 and fan0L/H~fan2L/H  mapping xyz.openbmc_project.Hwmon.hwmon4 Bus 
-        'FAN_INPUT_OBJ' : ['i2c@1e78a000/i2c-bus@380/nct7904@2e', 'xyz.openbmc_project.Sensor.Value'],
-        'FAN_OUTPUT_OBJ' : ['i2c@1e78a000/i2c-bus@380/nct7904@2e', 'xyz.openbmc_project.Sensor.Value'],
-        #fan3~5 and fan3L/H~fan5L/H  mapping xyz.openbmc_project.Hwmon.hwmon3 Bus
-        'EXT_FAN_INPUT_OBJ' : ['i2c@1e78a000/i2c-bus@380/nct7904@2d', 'xyz.openbmc_project.Sensor.Value'],
-        'EXT_FAN_OUTPUT_OBJ' : ['i2c@1e78a000/i2c-bus@380/nct7904@2d', 'xyz.openbmc_project.Sensor.Value'],
-        'OPEN_LOOP_GROUPS_1' :  ['i2c@1e78a000/i2c-bus@40/lm75@4a', 'xyz.openbmc_project.Sensor.Value'],
-        'CLOSE_LOOP_GROUPS_1' :  ['sbefifo@2400/occ@1/occ-hwmon@1', 'xyz.openbmc_project.Sensor.Value'],
-        'EXT_CLOSE_LOOP_GROUPS_1' :  ['sbefifo@2400/occ@2/occ-hwmon@2', 'xyz.openbmc_project.Sensor.Value'],
-        'CLOSE_LOOP_GROUPS_2' :  ['sbefifo@2400/occ@1/occ-hwmon@1', 'xyz.openbmc_project.Sensor.Value'],
-        'EXT_CLOSE_LOOP_GROUPS_2' :  ['sbefifo@2400/occ@2/occ-hwmon@2', 'xyz.openbmc_project.Sensor.Value'],
-        'CLOSE_LOOP_GROUPS_3' :  ['i2c@1e78a000/i2c-bus@380/hdd@71', 'xyz.openbmc_project.Sensor.Value'],
+        'CHASSIS_POWER_STATE': ['org.openbmc.control.Chassis'],
+        'FAN_INPUT_OBJ' : ['xyz.openbmc_project.Sensor.Value'],
+        'FAN_OUTPUT_OBJ' : ['xyz.openbmc_project.Sensor.Value'],
+        'OPEN_LOOP_GROUPS_1' :  ['xyz.openbmc_project.Sensor.Value'],
+        'CLOSE_LOOP_GROUPS_1' :  ['xyz.openbmc_project.Sensor.Value'],
+        'CLOSE_LOOP_GROUPS_2' :  ['xyz.openbmc_project.Sensor.Value'],
+        'CLOSE_LOOP_GROUPS_3' :  ['xyz.openbmc_project.Sensor.Value'],
     },
 
     'CHASSIS_POWER_STATE': ['/org/openbmc/control/chassis0'],
     'FAN_INPUT_OBJ':
         [
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan0L", "pwm1",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan0H", "pwm2",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan1L", "pwm3",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan1H", "pwm4",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan2L", "pwm5",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan2H", "pwm6",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan3L", "pwm1",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan3H", "pwm2",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan4L", "pwm3",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan4H", "pwm4",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan5L", "pwm5",
-            "/xyz/openbmc_project/sensors/fan_tach/tach/fan5H", "pwm6",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan0L",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan0H",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan1L",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan1H",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan2L",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan2H",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan3L",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan3H",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan4L",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan4H",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan5L",
+            "/xyz/openbmc_project/sensors/fan_tach/tach/fan5H",
         ],
     'FAN_OUTPUT_OBJ':
         [
@@ -539,10 +533,10 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_3':
         [
-           "/xyz/openbmc_project/sensors/temperature/HDD_71_00_TEMP", "Senosr BUS:", "i2c@1e78a000/i2c-bus@380/hdd@71",
-           "/xyz/openbmc_project/sensors/temperature/HDD_72_00_TEMP", "Senosr BUS:", "i2c@1e78a000/i2c-bus@380/hdd@72",
-           "/xyz/openbmc_project/sensors/temperature/HDD_73_00_TEMP", "Senosr BUS:", "i2c@1e78a000/i2c-bus@380/hdd@73",
-           "/xyz/openbmc_project/sensors/temperature/HDD_74_00_TEMP", "Senosr BUS:", "i2c@1e78a000/i2c-bus@380/hdd@74",
+           "/xyz/openbmc_project/sensors/temperature/HDD_71_00_TEMP",
+           "/xyz/openbmc_project/sensors/temperature/HDD_72_00_TEMP",
+           "/xyz/openbmc_project/sensors/temperature/HDD_73_00_TEMP",
+           "/xyz/openbmc_project/sensors/temperature/HDD_74_00_TEMP",
         ],
 
     'FAN_LED_OFF': ["0xFF"],
