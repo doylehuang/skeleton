@@ -1523,9 +1523,6 @@ static void inital_fan_pid_shm()
 
 int main(int argc, char *argv[])
 {
-         //TODO: workaround for fan algorithm service starting time
-        //      to aviod fan algorithm to get dbus fail
-	sleep(90);
 	inital_fan_pid_shm();
 	return fan_control_algorithm_monitor();
 }
