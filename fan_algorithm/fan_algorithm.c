@@ -544,11 +544,13 @@ int get_object_service_bus_name(sd_bus *bus, char **service_name, const char *ob
 {
 	sd_bus_error bus_error = SD_BUS_ERROR_NULL;
 	sd_bus_message *m = NULL;
-	char *temp_buf = NULL, *intf = NULL;
+	const char *temp_buf = NULL, *intf = NULL;
 	int rc;
 
-	if (*service_name != NULL)
-		return 0;
+	if (*service_name == NULL) {
+		*service_name = calloc(DBUS_MAX_NAME_LEN, sizeof(char));
+	}
+	memset(*service_name, 0, DBUS_MAX_NAME_LEN);
 
 	if (bus == NULL || obj_path == NULL || intf_name == NULL)
 		return -1;
@@ -568,20 +570,18 @@ int get_object_service_bus_name(sd_bus *bus, char **service_name, const char *ob
 		if (g_fan_para_shm->debug_msg_info_en == 1)
 			fprintf(stderr,
 				"Failed to GetObject: %s\n", bus_error.message);
-		goto finish;
+		goto object_service_bus_finish;
 	}
 
 	/* Get the key, aka, the bus name */
-	sd_bus_message_read(m, "a{sas}", 1, &temp_buf, 1, &intf);
+	rc = sd_bus_message_read(m, "a{sas}", 1, &temp_buf, 1, &intf);
 
-	if (temp_buf != NULL) {
-		*service_name = calloc(DBUS_MAX_NAME_LEN, sizeof(char));
+	if (rc >= 0) {
 		strncpy(*service_name, temp_buf, DBUS_MAX_NAME_LEN);
 	}
-finish:
+object_service_bus_finish:
 	sd_bus_error_free(&bus_error);
-	sd_bus_message_unref(m);
-	sd_bus_flush(bus);
+	m = sd_bus_message_unref(m);
 	return rc;
 }
 
@@ -592,11 +592,9 @@ static int get_sensor_reading(sd_bus *bus, char **service_name, char *intf_name,
 	int rc;
 
 	*sensor_reading = 0;
-	if (*service_name == NULL) {
-		rc = get_object_service_bus_name(bus, service_name, obj_path, intf_name);
-		if (rc < 0)
-			return rc;
-	}
+	rc = get_object_service_bus_name(bus, service_name, obj_path, intf_name);
+	if (rc < 0)
+		return rc;
 
 	rc = sd_bus_call_method(bus,
 				*service_name,
