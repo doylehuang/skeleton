@@ -756,6 +756,7 @@ static int fan_control_algorithm_monitor(void)
 	uint8_t fan_failure_counter = 0;
 	char fan_failure[MAX_SENSOR_NUM] = {0};
 	int t_reading;
+	struct timeval tv;
 
 	double real_fanspeed = 0.0;
 	do {
@@ -995,7 +996,10 @@ finish:
 		sd_bus_flush(bus);
 		memcpy(fan_presence_previous, fan_presence, sizeof(fan_presence));
 		memset(fan_presence, 0, sizeof(fan_presence));
-		usleep(200*1000);
+		//delay 200ms
+		tv.tv_sec = 0;
+		tv.tv_usec = 200 * 1000;
+		select(0, NULL, NULL, NULL, &tv);
 	}
 	bus = sd_bus_flush_close_unref(bus);
 	freeall_fan_obj(&g_Closeloop_Header);
