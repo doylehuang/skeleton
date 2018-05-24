@@ -17,6 +17,7 @@
 #define MAX_PATH_LEN 200
 #define MAX_SENSOR_NUM 50
 #define SAMPLING_N  20
+#define OCC_MAX_NUM 2
 
 #define CMD_OUTPUT_PORT_0 2
 
@@ -47,11 +48,21 @@ struct st_closeloop_obj_data {
 	int scale;
 };
 
+struct st_occ_obj_data {
+	char occ_dev_path[MAX_PATH_LEN];
+	int occ_dev_checked;
+	int min_occ_sensor_number;
+	int max_occ_sensor_number;
+};
+
 struct st_fan_obj_path_info {
 	char service_inf[MAX_PATH_LEN];
 	char path[MAX_SENSOR_NUM][MAX_PATH_LEN];
 	char *sensor_service_bus[MAX_SENSOR_NUM];
 	int size;
+	struct st_occ_obj_data occ_data[OCC_MAX_NUM];
+	int occ_size;
+	int flag_sensor_reading_from_device_node;
 	void *obj_data;
 	struct st_fan_obj_path_info *next;
 };
@@ -550,6 +561,8 @@ int get_object_service_bus_name(sd_bus *bus, char **service_name, const char *ob
 	if (*service_name == NULL) {
 		*service_name = calloc(DBUS_MAX_NAME_LEN, sizeof(char));
 	}
+	if (strlen(*service_name) > 0)
+		return strlen(*service_name);
 	memset(*service_name, 0, DBUS_MAX_NAME_LEN);
 
 	if (bus == NULL || obj_path == NULL || intf_name == NULL)
@@ -621,6 +634,105 @@ static int get_sensor_reading(sd_bus *bus, char **service_name, char *intf_name,
 	return rc;
 }
 
+
+
+int read_file(char *path)
+{
+	FILE *fp1 = NULL;
+	int retry = 10;
+	int i;
+	int val = 0;
+	for (i =0 ; i<retry; i++)
+	{
+		fp1= fopen(path, "r");
+		if(fp1 != NULL)
+			break;
+	}
+	if ( i == retry) {
+		return -1;
+	}
+	fscanf(fp1, "%d", &val);
+	if (val < 0)
+		val = 0;
+	fclose(fp1);
+	return val;
+}
+
+static int get_sensor_reading_file(char *device_path, int *sensor_reading)
+{
+	int retry = 1;
+	int i;
+	*sensor_reading = 0;
+
+	if (g_fan_para_shm->debug_msg_info_en == 1)
+		printf("[FAN_ALGORITHM][%s, %d] device_path:%s\n", __FUNCTION__, __LINE__, device_path);
+	if( access(device_path, F_OK ) == -1 ) //check file exist or not
+		return 0;
+	for (i = 0; i < retry; i++) {
+		*sensor_reading = read_file(device_path);
+		if (*sensor_reading > 0)
+			break;
+		//usleep(1000);
+	}
+	return *sensor_reading;
+}
+
+static int get_occ_device_path(struct st_fan_obj_path_info *fan_obj, int occ_index)
+{
+	int occ_device_size = 0;
+	char occ_hwmon_path[MAX_PATH_LEN] = {0};
+	char occ_hwmon_label_path[MAX_PATH_LEN] = {0};
+	char occ_hwmon_input_path[MAX_PATH_LEN] = {0};
+	int i;
+	int occ_sensor_num;
+	struct st_occ_obj_data *ptr_occ_data = &fan_obj->occ_data[occ_index];
+
+	if (g_fan_para_shm->debug_msg_info_en == 1)
+			printf("[FAN_ALGORITHM][%s, %d] occ_dev_path:%s, occ_index:%d, [%d~%d]\n", 
+				__FUNCTION__, __LINE__, ptr_occ_data->occ_dev_path, occ_index,
+				ptr_occ_data->min_occ_sensor_number, ptr_occ_data->max_occ_sensor_number);
+
+	if( access( ptr_occ_data->occ_dev_path , F_OK ) == -1 ) //check occ exist or not
+		return 0;
+
+	for (i = 0; i < MAX_SENSOR_NUM; i++) {
+		occ_hwmon_path[0] = 0;
+		snprintf(occ_hwmon_path, MAX_PATH_LEN, "%s/hwmon%d", ptr_occ_data->occ_dev_path, i);
+		if (g_fan_para_shm->debug_msg_info_en == 1)
+			printf("[FAN_ALGORITHM][%s, %d] occ_hwmon_path:%s\n", 
+				__FUNCTION__, __LINE__, occ_hwmon_path);
+		if (access( occ_hwmon_path , F_OK ) != -1)
+			break;
+	}
+	if (i >= MAX_SENSOR_NUM) //not find occ hwmon device path
+		return 0;
+
+	for (i = 1; i <= MAX_SENSOR_NUM; i++) {
+		occ_hwmon_label_path[0] = 0;
+		occ_hwmon_input_path[0] = 0;
+		snprintf(occ_hwmon_label_path, MAX_PATH_LEN, "%s/temp%d_label", occ_hwmon_path, i);
+		snprintf(occ_hwmon_input_path, MAX_PATH_LEN, "%s/temp%d_input", occ_hwmon_path, i);
+		if (g_fan_para_shm->debug_msg_info_en == 1)
+			printf("[FAN_ALGORITHM][%s, %d] occ_hwmon_label_path:%s, occ_hwmon_input_path:%s\n", 
+				__FUNCTION__, __LINE__, occ_hwmon_label_path, occ_hwmon_input_path);
+		if ((access( occ_hwmon_label_path , F_OK ) == -1) || 
+			(access( occ_hwmon_input_path , F_OK ) == -1))
+			break;
+		occ_sensor_num = read_file(occ_hwmon_label_path);
+		if (occ_sensor_num >= ptr_occ_data->min_occ_sensor_number && 
+			 occ_sensor_num <= ptr_occ_data->max_occ_sensor_number) {
+			strncpy(fan_obj->path[fan_obj->size], occ_hwmon_input_path, MAX_PATH_LEN);
+			if (g_fan_para_shm->debug_msg_info_en == 1)
+				printf("[FAN_ALGORITHM][%s, %d] path:%s, size:%d\n", 
+					__FUNCTION__, __LINE__, fan_obj->path[fan_obj->size], fan_obj->size);
+			fan_obj->size+=1;
+			occ_device_size+=1;
+		}
+	}
+	return occ_device_size;
+}
+
+
 static int get_max_sensor_reading(sd_bus *bus, struct st_fan_obj_path_info *fan_obj)
 {
 	int i;
@@ -628,8 +740,20 @@ static int get_max_sensor_reading(sd_bus *bus, struct st_fan_obj_path_info *fan_
 	int sensor_reading;
 	int max_value = 0;
 
-	for(i=0; i<fan_obj->size; i++) {
-		rc = get_sensor_reading(bus, &fan_obj->sensor_service_bus[i], fan_obj->service_inf, fan_obj->path[i], &sensor_reading);
+	if (fan_obj->occ_size > 0) {
+		for (i = 0; i < fan_obj->occ_size; i++) {
+			if (fan_obj->occ_data[i].occ_dev_checked == 0) {
+				if (get_occ_device_path(fan_obj, i) > 0)
+					fan_obj->occ_data[i].occ_dev_checked = 1;
+			}
+		}
+	}
+
+	for(i=0; i < fan_obj->size; i++) {
+		if (fan_obj->flag_sensor_reading_from_device_node == 1)
+			rc = get_sensor_reading_file(fan_obj->path[i], &sensor_reading);
+		else
+			rc = get_sensor_reading(bus, &fan_obj->sensor_service_bus[i], fan_obj->service_inf, fan_obj->path[i], &sensor_reading);
 		if (rc >= 0)
 			max_value = (max_value < sensor_reading)? sensor_reading : max_value;
 	}
@@ -1001,10 +1125,12 @@ finish:
 		sd_bus_flush(bus);
 		memcpy(fan_presence_previous, fan_presence, sizeof(fan_presence));
 		memset(fan_presence, 0, sizeof(fan_presence));
+		#if 0
 		//delay 200ms
 		tv.tv_sec = 0;
 		tv.tv_usec = 200 * 1000;
 		select(0, NULL, NULL, NULL, &tv);
+		#endif
 	}
 	bus = sd_bus_flush_close_unref(bus);
 	freeall_fan_obj(&g_Closeloop_Header);
@@ -1068,7 +1194,7 @@ static int initial_fan_config(sd_bus *bus)
 {
 	int response_len = 0;
 	char response_data[50][200];
-	int i;
+	int i, j;
 	int obj_count = 0;
 	char *p;
 	int index;
@@ -1139,10 +1265,40 @@ static int initial_fan_config(sd_bus *bus)
 
 		t_fan_obj =(struct st_fan_obj_path_info *) malloc(sizeof(struct st_fan_obj_path_info));
 
-		t_fan_obj->size = response_len;
-		for (i = 0; i<response_len ; i++) {
-			strncpy(t_fan_obj->path[i], response_data[i], MAX_PATH_LEN);
-			t_fan_obj->sensor_service_bus[i] = NULL;
+		if (strcmp(response_data[0], "OCC_DEVICE") == 0) {
+			t_fan_obj->size = 0;
+			for (i = 1; i < response_len; i+=3, t_fan_obj->occ_size+=1) {
+				struct st_occ_obj_data *ptr_occ_data = &t_fan_obj->occ_data[t_fan_obj->occ_size];
+				strncpy(ptr_occ_data->occ_dev_path, response_data[i], MAX_PATH_LEN);
+				ptr_occ_data->occ_dev_checked = 0;
+				ptr_occ_data->min_occ_sensor_number = atoi(response_data[i+1]);
+				ptr_occ_data->max_occ_sensor_number = atoi(response_data[i+2]);
+			}
+			t_fan_obj->flag_sensor_reading_from_device_node = 1;
+		} else if (strcmp(response_data[0], "HDD_DEVICE") == 0) {
+			t_fan_obj->size = 0;
+			for (i = 1; i < response_len; i+=2) {
+				for (j = 0; j < MAX_SENSOR_NUM; j++) {
+					char tmp_hdd_path[MAX_PATH_LEN] = {0};
+					snprintf(tmp_hdd_path, MAX_PATH_LEN, "%s/hwmon%d/%s", response_data[i], j, response_data[i+1]);
+					printf("%s , %d, %s\n", __FUNCTION__, __LINE__, tmp_hdd_path);
+					if (access( tmp_hdd_path , F_OK ) != -1) {
+						t_fan_obj->path[t_fan_obj->size][0] = 0;
+						strncpy(t_fan_obj->path[t_fan_obj->size], tmp_hdd_path, MAX_PATH_LEN);
+						printf("%s , %d, %s, %d\n", __FUNCTION__, __LINE__, t_fan_obj->path[t_fan_obj->size], t_fan_obj->size);
+						t_fan_obj->size+=1;
+						break;
+					}
+				}
+			}
+			t_fan_obj->flag_sensor_reading_from_device_node = 1;
+		} else {
+			t_fan_obj->size = response_len;
+			for (i = 0; i<response_len ; i++) {
+				strncpy(t_fan_obj->path[i], response_data[i], MAX_PATH_LEN);
+				t_fan_obj->sensor_service_bus[i] = NULL;
+			}
+			t_fan_obj->flag_sensor_reading_from_device_node = 0;
 		}
 
 		prefix_closeloop[0] = 0;

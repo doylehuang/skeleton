@@ -499,10 +499,9 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_1':
         [
-            "Sensor_Group_List", #notify following 2 element, show path format and amount range
-            "/xyz/openbmc_project/sensors/temperature/p0_core%d_temp", [0, 23],
-            "Sensor_Group_List", #notify following 2 element, show path format and amount range
-            "/xyz/openbmc_project/sensors/temperature/p1_core%d_temp", [0, 23],
+        	"OCC_DEVICE",
+            "/sys/bus/platform/drivers/occ-hwmon/occ-hwmon.1/hwmon", "0", "103",
+            "/sys/bus/platform/drivers/occ-hwmon/occ-hwmon.2/hwmon", "0", "183",
         ],
 #Close Loop Profile#2: DIMM thermal
     'CLOSE_LOOP_PARAM_2' :
@@ -517,8 +516,9 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_2':
         [
-            "Sensor_Group_List", #notify following 2 element, show path format and amount range
-            "/xyz/openbmc_project/sensors/temperature/dimm%d_temp", [0, 31],
+            "OCC_DEVICE",
+            "/sys/bus/platform/drivers/occ-hwmon/occ-hwmon.1/hwmon", "104", "255",
+            "/sys/bus/platform/drivers/occ-hwmon/occ-hwmon.2/hwmon", "184", "255",
         ],
 #Close Loop Profile#3: HDD thermal
     'CLOSE_LOOP_PARAM_3' :
@@ -533,30 +533,31 @@ FAN_ALGORITHM_CONFIG = {
         ],
     'CLOSE_LOOP_GROUPS_3':
         [
-           "/xyz/openbmc_project/sensors/temperature/HDD_71_MICRON_TEMP",
-           "/xyz/openbmc_project/sensors/temperature/HDD_72_MICRON_TEMP",
-           "/xyz/openbmc_project/sensors/temperature/HDD_73_MICRON_TEMP",
-           "/xyz/openbmc_project/sensors/temperature/HDD_74_MICRON_TEMP",
-           "/xyz/openbmc_project/sensors/temperature/HDD_71_PM963_TEMP1",
-           "/xyz/openbmc_project/sensors/temperature/HDD_71_PM963_TEMP2",
-           "/xyz/openbmc_project/sensors/temperature/HDD_71_PM963_TEMP3",
-           "/xyz/openbmc_project/sensors/temperature/HDD_71_PM963_TEMP4",
-           "/xyz/openbmc_project/sensors/temperature/HDD_72_PM963_TEMP1",
-           "/xyz/openbmc_project/sensors/temperature/HDD_72_PM963_TEMP2",
-           "/xyz/openbmc_project/sensors/temperature/HDD_72_PM963_TEMP3",
-           "/xyz/openbmc_project/sensors/temperature/HDD_72_PM963_TEMP4",
-           "/xyz/openbmc_project/sensors/temperature/HDD_73_PM963_TEMP1",
-           "/xyz/openbmc_project/sensors/temperature/HDD_73_PM963_TEMP2",
-           "/xyz/openbmc_project/sensors/temperature/HDD_73_PM963_TEMP3",
-           "/xyz/openbmc_project/sensors/temperature/HDD_73_PM963_TEMP4",
-           "/xyz/openbmc_project/sensors/temperature/HDD_74_PM963_TEMP1",
-           "/xyz/openbmc_project/sensors/temperature/HDD_74_PM963_TEMP2",
-           "/xyz/openbmc_project/sensors/temperature/HDD_74_PM963_TEMP3",
-           "/xyz/openbmc_project/sensors/temperature/HDD_74_PM963_TEMP4",
-           "/xyz/openbmc_project/sensors/temperature/HDD_75_PM963_TEMP1",
-           "/xyz/openbmc_project/sensors/temperature/HDD_75_PM963_TEMP2",
-           "/xyz/openbmc_project/sensors/temperature/HDD_75_PM963_TEMP3",
-           "/xyz/openbmc_project/sensors/temperature/HDD_75_PM963_TEMP4",
+           "HDD_DEVICE",
+           "/sys/bus/i2c/devices/9-0071/hwmon", "micron_temp1_input",
+           "/sys/bus/i2c/devices/9-0072/hwmon", "micron_temp1_input",
+           "/sys/bus/i2c/devices/9-0073/hwmon", "micron_temp1_input",
+           "/sys/bus/i2c/devices/9-0074/hwmon", "micron_temp1_input",
+           "/sys/bus/i2c/devices/9-0071/hwmon", "pm963_temp1_input",
+           "/sys/bus/i2c/devices/9-0071/hwmon", "pm963_temp2_input",
+           "/sys/bus/i2c/devices/9-0071/hwmon", "pm963_temp3_input",
+           "/sys/bus/i2c/devices/9-0071/hwmon", "pm963_temp4_input",
+           "/sys/bus/i2c/devices/9-0072/hwmon", "pm963_temp1_input",
+           "/sys/bus/i2c/devices/9-0072/hwmon", "pm963_temp2_input",
+           "/sys/bus/i2c/devices/9-0072/hwmon", "pm963_temp3_input",
+           "/sys/bus/i2c/devices/9-0072/hwmon", "pm963_temp4_input",
+           "/sys/bus/i2c/devices/9-0073/hwmon", "pm963_temp1_input",
+           "/sys/bus/i2c/devices/9-0073/hwmon", "pm963_temp2_input",
+           "/sys/bus/i2c/devices/9-0073/hwmon", "pm963_temp3_input",
+           "/sys/bus/i2c/devices/9-0073/hwmon", "pm963_temp4_input",
+           "/sys/bus/i2c/devices/9-0074/hwmon", "pm963_temp1_input",
+           "/sys/bus/i2c/devices/9-0074/hwmon", "pm963_temp2_input",
+           "/sys/bus/i2c/devices/9-0074/hwmon", "pm963_temp3_input",
+           "/sys/bus/i2c/devices/9-0074/hwmon", "pm963_temp4_input",
+           "/sys/bus/i2c/devices/9-0075/hwmon", "pm963_temp1_input",
+           "/sys/bus/i2c/devices/9-0075/hwmon", "pm963_temp2_input",
+           "/sys/bus/i2c/devices/9-0075/hwmon", "pm963_temp3_input",
+           "/sys/bus/i2c/devices/9-0075/hwmon", "pm963_temp4_input",
         ],
 
     'FAN_LED_OFF': ["0xFF"],
