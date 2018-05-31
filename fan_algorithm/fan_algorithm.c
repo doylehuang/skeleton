@@ -15,7 +15,7 @@
 #define I2C_M_RECV_LEN          0x0400  /* length will be first received byte */
 
 #define MAX_PATH_LEN 200
-#define MAX_SENSOR_NUM 50
+#define MAX_SENSOR_NUM 70
 #define SAMPLING_N  20
 #define OCC_MAX_NUM 2
 
@@ -1140,7 +1140,7 @@ finish:
 	return rc < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static int get_dbus_fan_parameters(sd_bus *bus , char *request_param , int *response_len, char response_data[50][200])
+static int get_dbus_fan_parameters(sd_bus *bus , char *request_param , int *response_len, char response_data[120][200])
 {
 	sd_bus_error bus_error = SD_BUS_ERROR_NULL;
 	sd_bus_message *response = NULL;
@@ -1193,7 +1193,7 @@ static int get_dbus_fan_parameters(sd_bus *bus , char *request_param , int *resp
 static int initial_fan_config(sd_bus *bus)
 {
 	int response_len = 0;
-	char response_data[50][200];
+	char response_data[120][200];
 	int i, j;
 	int obj_count = 0;
 	char *p;
