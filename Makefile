@@ -22,7 +22,8 @@ SUBDIRS = fanctl \
 	  pytools \
 	  fan_algorithm \
 	  fan_tool \
-	  info
+	  info \
+	  gpu_utility
 
 REVERSE_SUBDIRS = $(shell echo $(SUBDIRS) $(GDBUS_APPS) | tr ' ' '\n' | tac |tr '\n' ' ')
 
