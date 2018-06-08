@@ -433,6 +433,7 @@ FAN_ALGORITHM_CONFIG = {
         'CLOSE_LOOP_GROUPS_1' :  ['xyz.openbmc_project.Sensor.Value'],
         'CLOSE_LOOP_GROUPS_2' :  ['xyz.openbmc_project.Sensor.Value'],
         'CLOSE_LOOP_GROUPS_3' :  ['xyz.openbmc_project.Sensor.Value'],
+        'CLOSE_LOOP_GROUPS_4' :  ['xyz.openbmc_project.Sensor.Value'],
     },
 
     'CHASSIS_POWER_STATE': ['/org/openbmc/control/chassis0'],
@@ -526,14 +527,14 @@ FAN_ALGORITHM_CONFIG = {
             '0.16',
             '-0.004',
             '0.1',
-            '55',
+            '62',
             '65',
             '71',
             '1000',
         ],
     'CLOSE_LOOP_GROUPS_3':
         [
-           "HDD_DEVICE",
+           "SENSORS_DEVICE_NODE",
            "/sys/bus/i2c/devices/9-0071/hwmon", "micron_temp1_input",
            "/sys/bus/i2c/devices/9-0072/hwmon", "micron_temp1_input",
            "/sys/bus/i2c/devices/9-0073/hwmon", "micron_temp1_input",
@@ -558,6 +559,22 @@ FAN_ALGORITHM_CONFIG = {
            "/sys/bus/i2c/devices/9-0075/hwmon", "pm963_temp2_input",
            "/sys/bus/i2c/devices/9-0075/hwmon", "pm963_temp3_input",
            "/sys/bus/i2c/devices/9-0075/hwmon", "pm963_temp4_input",
+        ],
+#Close Loop Profile#4: GPU thermal
+    'CLOSE_LOOP_PARAM_4' :
+        [
+            '0.16',
+            '-0.004',
+            '0.1',
+            '76',
+            '82',
+            '85',
+            '1000',
+        ],
+    'CLOSE_LOOP_GROUPS_4':
+        [
+           "SENSORS_DEVICE_NODE",
+           "/sys/bus/i2c/devices/220-004f/hwmon", "temp1_input",
         ],
 
     'FAN_LED_OFF': ["0xFF"],

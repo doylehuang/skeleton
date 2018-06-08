@@ -1275,7 +1275,7 @@ static int initial_fan_config(sd_bus *bus)
 				ptr_occ_data->max_occ_sensor_number = atoi(response_data[i+2]);
 			}
 			t_fan_obj->flag_sensor_reading_from_device_node = 1;
-		} else if (strcmp(response_data[0], "HDD_DEVICE") == 0) {
+		} else if (strcmp(response_data[0], "SENSORS_DEVICE_NODE") == 0) {
 			t_fan_obj->size = 0;
 			for (i = 1; i < response_len; i+=2) {
 				for (j = 0; j < MAX_SENSOR_NUM; j++) {
