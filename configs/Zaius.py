@@ -583,6 +583,9 @@ FAN_ALGORITHM_CONFIG = {
            "/sys/bus/i2c/devices/9-005f/hwmon", "temp21_input",
            "/sys/bus/i2c/devices/9-005f/hwmon", "temp22_input",
            "/sys/bus/i2c/devices/9-005f/hwmon", "temp23_input",
+           "PRESENT_GROUP_DEVICE_NODE",
+           "/sys/bus/i2c/devices/9-005f/hwmon", "present_status",
+           "/sys/bus/i2c/devices/9-005d/hwmon", "nvme_hdd_present_status",
         ],
 #Close Loop Profile#4: GPU thermal
     'CLOSE_LOOP_PARAM_4' :
@@ -598,7 +601,11 @@ FAN_ALGORITHM_CONFIG = {
     'CLOSE_LOOP_GROUPS_4':
         [
            "SENSORS_DEVICE_NODE",
-           "/sys/bus/i2c/devices/220-004f/hwmon", "temp1_input",
+           "/sys/bus/i2c/devices/217-004c/hwmon", "temp1_input",
+           "/sys/bus/i2c/devices/220-004c/hwmon", "temp1_input",
+           "PRESENT_GROUP_DEVICE_NODE",
+           "/sys/bus/i2c/devices/217-004c/hwmon", "present_status",
+           "/sys/bus/i2c/devices/220-004c/hwmon", "present_status",
         ],
 
     'FAN_LED_OFF': ["0xFF"],

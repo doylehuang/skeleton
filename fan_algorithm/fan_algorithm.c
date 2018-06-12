@@ -59,6 +59,8 @@ struct st_fan_obj_path_info {
 	char service_inf[MAX_PATH_LEN];
 	char path[MAX_SENSOR_NUM][MAX_PATH_LEN];
 	char *sensor_service_bus[MAX_SENSOR_NUM];
+	char present_group_path[MAX_SENSOR_NUM][MAX_PATH_LEN];;
+	int present_group_count;
 	int size;
 	struct st_occ_obj_data occ_data[OCC_MAX_NUM];
 	int occ_size;
@@ -403,7 +405,7 @@ static int calculate_closeloop(struct st_closeloop_obj_data *sensor_data, double
 
 	sensor_data->sensor_reading = g_fan_para_shm->closeloop_param[index].closeloop_sensor_reading;
 
-	if (sensor_data->sensor_reading <=0) {
+	if (sensor_data->sensor_reading ==0) {
 		pwm_speed = 100;
 		g_closeloop_record[g_closeloop_record_count].cal_speed = 100;
 		g_closeloop_record[g_closeloop_record_count].current_error = 0;
@@ -417,6 +419,18 @@ static int calculate_closeloop(struct st_closeloop_obj_data *sensor_data, double
 		g_fan_para_shm->closeloop_param[index].current_fanspeed = current_fanspeed;
 		g_Closeloopspeed = 100;
 
+		return 1;
+	} else if (sensor_data->sensor_reading == -1) {
+		g_closeloop_record[g_closeloop_record_count].cal_speed = -1;
+		g_closeloop_record[g_closeloop_record_count].current_error = 0;
+		g_closeloop_record[g_closeloop_record_count].pid_val = 0;
+		g_closeloop_record[g_closeloop_record_count].sensor_reading = sensor_data->sensor_reading;
+		g_closeloop_record_count++;
+
+
+		g_fan_para_shm->closeloop_param[index].pid_value = 0;
+		g_fan_para_shm->closeloop_param[index].closeloop_speed = -1;
+		g_fan_para_shm->closeloop_param[index].current_fanspeed = current_fanspeed;
 		return 1;
 	}
 
@@ -733,12 +747,33 @@ static int get_occ_device_path(struct st_fan_obj_path_info *fan_obj, int occ_ind
 }
 
 
+/*
+	@return: 1 - ok : (1) no present pin to check
+	                  (2) some devices present
+	         0 - fail: device has present pin and no device present
+*/
+static int check_present_group_status(struct st_fan_obj_path_info *fan_obj)
+{
+	int i;
+	int sum_present_value = 0;
+	if (fan_obj->present_group_count == 0)
+		return 1;
+	for (i = 0; i < fan_obj->present_group_count; i++) {
+		sum_present_value+=read_file(fan_obj->present_group_path[i]);
+	}
+	if (sum_present_value == 0)
+		return 0;
+	else
+		return 1;
+}
+
 static int get_max_sensor_reading(sd_bus *bus, struct st_fan_obj_path_info *fan_obj)
 {
 	int i;
 	int rc;
 	int sensor_reading;
 	int max_value = 0;
+	int present_group_status;
 
 	if (fan_obj->occ_size > 0) {
 		for (i = 0; i < fan_obj->occ_size; i++) {
@@ -748,7 +783,7 @@ static int get_max_sensor_reading(sd_bus *bus, struct st_fan_obj_path_info *fan_
 			}
 		}
 	}
-
+	present_group_status = check_present_group_status(fan_obj);
 	for(i=0; i < fan_obj->size; i++) {
 		if (fan_obj->flag_sensor_reading_from_device_node == 1)
 			rc = get_sensor_reading_file(fan_obj->path[i], &sensor_reading);
@@ -757,7 +792,8 @@ static int get_max_sensor_reading(sd_bus *bus, struct st_fan_obj_path_info *fan_
 		if (rc >= 0)
 			max_value = (max_value < sensor_reading)? sensor_reading : max_value;
 	}
-
+	if (max_value == 0 && present_group_status == 0)
+		return -1;
 	return max_value;
 }
 
@@ -968,6 +1004,9 @@ static int fan_control_algorithm_monitor(void)
 					t_closeloop_data->sensor_reading = t_closeloop_data->sensor_reading / t_closeloop_data->scale;
 				g_fan_para_shm->closeloop_param[t_closeloop_data->index].closeloop_sensor_reading = t_closeloop_data->sensor_reading;
 				check_change_closeloop_params(t_closeloop_data);
+				if (g_fan_para_shm->debug_msg_info_en == 1)
+					printf("[FAN_ALGORITHM][%s, %d] closeloop_index:%d, sensor_reading:%d\n", 
+						__FUNCTION__, __LINE__, closeloop_index, t_closeloop_data->sensor_reading);
 				calculate_closeloop(t_closeloop_data, real_fanspeed, bus);
 				closeloop_reading = (closeloop_reading<t_closeloop_data->sensor_reading)? t_closeloop_data->sensor_reading:closeloop_reading;
 			}
@@ -1198,6 +1237,7 @@ static int initial_fan_config(sd_bus *bus)
 	int obj_count = 0;
 	char *p;
 	int index;
+	int flag_present_node = 0;
 
 	get_dbus_fan_parameters(bus, "FAN_INPUT_OBJ", &response_len, response_data);
 	g_FanInputObjPath.size = response_len;
@@ -1264,7 +1304,10 @@ static int initial_fan_config(sd_bus *bus)
 			break;
 
 		t_fan_obj =(struct st_fan_obj_path_info *) malloc(sizeof(struct st_fan_obj_path_info));
+		memset(t_fan_obj, 0, sizeof(struct st_fan_obj_path_info));
 
+		flag_present_node = 0;
+		t_fan_obj->present_group_count = 0;
 		if (strcmp(response_data[0], "OCC_DEVICE") == 0) {
 			t_fan_obj->size = 0;
 			for (i = 1; i < response_len; i+=3, t_fan_obj->occ_size+=1) {
@@ -1277,19 +1320,33 @@ static int initial_fan_config(sd_bus *bus)
 			t_fan_obj->flag_sensor_reading_from_device_node = 1;
 		} else if (strcmp(response_data[0], "SENSORS_DEVICE_NODE") == 0) {
 			t_fan_obj->size = 0;
-			for (i = 1; i < response_len; i+=2) {
+			for (i = 1; i < response_len; ) {
+				if (strcmp(response_data[i], "PRESENT_GROUP_DEVICE_NODE") == 0) {
+					i+=1;
+					flag_present_node = 1;
+					continue;
+				}
 				for (j = 0; j < MAX_SENSOR_NUM; j++) {
 					char tmp_hdd_path[MAX_PATH_LEN] = {0};
 					snprintf(tmp_hdd_path, MAX_PATH_LEN, "%s/hwmon%d/%s", response_data[i], j, response_data[i+1]);
 					printf("%s , %d, %s\n", __FUNCTION__, __LINE__, tmp_hdd_path);
 					if (access( tmp_hdd_path , F_OK ) != -1) {
-						t_fan_obj->path[t_fan_obj->size][0] = 0;
-						strncpy(t_fan_obj->path[t_fan_obj->size], tmp_hdd_path, MAX_PATH_LEN);
-						printf("%s , %d, %s, %d\n", __FUNCTION__, __LINE__, t_fan_obj->path[t_fan_obj->size], t_fan_obj->size);
-						t_fan_obj->size+=1;
+						if (flag_present_node == 1) {
+							strncpy(t_fan_obj->present_group_path[t_fan_obj->present_group_count], tmp_hdd_path, MAX_PATH_LEN);
+							printf("%s , %d, %s, %d\n", __FUNCTION__, __LINE__, 
+								t_fan_obj->present_group_path[t_fan_obj->present_group_count], 
+								t_fan_obj->present_group_count);
+							t_fan_obj->present_group_count+=1;
+						} else {
+							t_fan_obj->path[t_fan_obj->size][0] = 0;
+							strncpy(t_fan_obj->path[t_fan_obj->size], tmp_hdd_path, MAX_PATH_LEN);
+							printf("%s , %d, %s, %d\n", __FUNCTION__, __LINE__, t_fan_obj->path[t_fan_obj->size], t_fan_obj->size);
+							t_fan_obj->size+=1;
+						}
 						break;
 					}
 				}
+				i+=2;
 			}
 			t_fan_obj->flag_sensor_reading_from_device_node = 1;
 		} else {
@@ -1358,13 +1415,13 @@ static int initial_fan_config(sd_bus *bus)
 			break;
 
 		t_fan_obj =(struct st_fan_obj_path_info *) malloc(sizeof(struct st_fan_obj_path_info));
+		memset(t_fan_obj, 0, sizeof(struct st_fan_obj_path_info));
 
 		t_fan_obj->size = response_len;
 		for (i = 0; i<response_len ; i++) {
 			strncpy(t_fan_obj->path[i], response_data[i], MAX_PATH_LEN);
 			t_fan_obj->sensor_service_bus[i] = NULL;
 		}
-
 		prefix_openloop[0] = 0;
 		sprintf(prefix_openloop, "FAN_DBUS_INTF_LOOKUP#OPEN_LOOP_GROUPS_%d", obj_count);
 		get_dbus_fan_parameters(bus, prefix_openloop, &response_len, response_data);
