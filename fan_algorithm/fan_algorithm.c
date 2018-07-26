@@ -288,9 +288,6 @@ static void add_system_event_thermal_shutdown(sd_bus *bus, enum FAN_ALGO_TYPE fa
 	sd_bus_error bus_error = SD_BUS_ERROR_NULL;
 	sd_bus_message *response = NULL;
 
-	if (g_trigger_system_event != 0) //even trigger thermal shutdown event
-		return ;
-
 	rc = sd_bus_call_method(bus,
 				"xyz.openbmc_project.Logging",
 				"/xyz/openbmc_project/logging/internal/manager",
@@ -310,7 +307,10 @@ static void add_system_event_thermal_shutdown(sd_bus *bus, enum FAN_ALGO_TYPE fa
 	response = sd_bus_message_unref(response);
 }
 
-static void system_shut_down(sd_bus *bus, enum FAN_ALGO_TYPE fan_algo_type) {
+static void system_shut_down(sd_bus *bus, enum FAN_ALGO_TYPE fan_algo_type) 
+{
+	if (g_trigger_system_event != 0) //even trigger thermal shutdown event
+		return;
 	add_system_event_thermal_shutdown(bus, fan_algo_type);
 	if (g_fan_para_shm->debug_msg_info_en == 1)
 		printf("system_shut_down to prepare poweroff!!!! \n");

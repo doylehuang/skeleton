@@ -619,7 +619,7 @@ FAN_ALGORITHM_CONFIG = {
     'PORT1_FAN_LED_BLUE_MASK': ["0x01"],
     
     'FAN_LED_LIMIT': ["3000"],
-    'FAN_LED_AUX_LIMIT': ["800"],
+    'FAN_LED_AUX_LIMIT': ["-1"],
 
     'FAN_LED_I2C_BUS': ["/dev/i2c-9"],
     'FAN_LED_I2C_SLAVE_ADDRESS': [0x20],
